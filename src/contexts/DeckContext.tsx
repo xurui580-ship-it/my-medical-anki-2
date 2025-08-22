@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { createContext, useContext, useState, ReactNode, useEffect } from "react";
@@ -37,7 +38,9 @@ export function DeckProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     // Persist decks to localStorage whenever they change
     try {
-        localStorage.setItem("mediFlashDecks", JSON.stringify(decks));
+        if (decks.length > 0) { // Avoid overwriting initial state before it's loaded
+            localStorage.setItem("mediFlashDecks", JSON.stringify(decks));
+        }
     } catch (error) {
         console.error("Failed to save decks to localStorage", error);
     }
