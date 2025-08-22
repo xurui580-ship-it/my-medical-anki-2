@@ -30,9 +30,9 @@ export interface Deck {
   id: string;
   name: string;
   source: 'manual' | 'system' | 'doc';
+  sourceId?: string; // To track original system deck
   createdAt: string;
   dailyNewLearned: number;
   reviewModeToday: boolean;
   cards: Card[];
 }
-`

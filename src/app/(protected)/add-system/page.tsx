@@ -5,16 +5,36 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { SYSTEM_DECKS } from "@/lib/mock-data";
 import { useToast } from "@/hooks/use-toast";
 import { Library, PlusCircle } from "lucide-react";
+import { useDecks } from "@/contexts/DeckContext";
+import type { Deck } from "@/lib/types";
 
 export default function AddSystemPage() {
     const { toast } = useToast();
+    const { addDeck, decks } = useDecks();
 
-    const handleAddDeck = (deckName: string) => {
-        // In a real app, this would trigger an API call to copy the deck.
-        console.log(`Adding deck: ${deckName}`);
+    const handleAddDeck = (deckToAdd: Deck) => {
+        if (decks.some(d => d.sourceId === deckToAdd.id)) {
+            toast({
+                title: "无法添加",
+                description: `卡组 "${deckToAdd.name}" 已经在你的卡组中了。`,
+                variant: "destructive",
+            });
+            return;
+        }
+
+        // Create a copy for the user with a new ID
+        const newUserDeck: Deck = {
+            ...deckToAdd,
+            id: `user-deck-${Date.now()}`,
+            source: 'system',
+            sourceId: deckToAdd.id, // Keep track of the original system deck ID
+        };
+
+        addDeck(newUserDeck);
+        
         toast({
             title: "卡组已添加",
-            description: `系统卡组 "${deckName}" 已成功复制到你的卡组中。`,
+            description: `系统卡组 "${deckToAdd.name}" 已成功复制到你的卡组中。`,
         });
     };
 
@@ -36,9 +56,14 @@ export default function AddSystemPage() {
                             <CardDescription>{deck.cards.length} 张卡片</CardDescription>
                         </CardHeader>
                         <CardContent className="flex-grow flex items-end">
-                            <Button className="w-full" variant="success" onClick={() => handleAddDeck(deck.name)}>
+                            <Button 
+                                className="w-full" 
+                                variant="success" 
+                                onClick={() => handleAddDeck(deck)}
+                                disabled={decks.some(d => d.sourceId === deck.id)}
+                            >
                                 <PlusCircle className="mr-2 h-4 w-4" />
-                                添加到我的卡组
+                                {decks.some(d => d.sourceId === deck.id) ? "已添加" : "添加到我的卡组"}
                             </Button>
                         </CardContent>
                     </Card>
