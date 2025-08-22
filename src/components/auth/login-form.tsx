@@ -63,14 +63,14 @@ export default function LoginForm() {
             <Input
               id="username"
               type="text"
-              placeholder="test"
+              placeholder="请输入用户名"
               {...form.register("username")}
               required
             />
           </div>
           <div className="grid gap-2">
             <Label htmlFor="password">密码</Label>
-            <Input id="password" type="password" placeholder="test" {...form.register("password")} required />
+            <Input id="password" type="password" placeholder="请输入密码" {...form.register("password")} required />
           </div>
           {error && <p className="text-sm font-medium text-destructive">{error}</p>}
           <Button type="submit" className="w-full" variant="warm" disabled={isLoading}>
