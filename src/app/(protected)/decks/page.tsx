@@ -4,14 +4,12 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { PlusCircle, BookOpen, Brain, Clock, FolderPlus, LogOut } from "lucide-react";
-import { USER_DECKS } from "@/lib/mock-data";
 import { useAuth } from "@/contexts/AuthContext";
 
 function TodayStats() {
     const { user } = useAuth();
 
     // In a real app, this would come from the user's DB record.
-    // For now, we'll just show 0 for everyone as mock data is confusing.
     const userLearned = 0;
     const userReviewed = 0;
 

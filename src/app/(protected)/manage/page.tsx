@@ -21,7 +21,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { USER_DECKS } from "@/lib/mock-data";
 import type { Deck } from "@/lib/types";
 import { MoreHorizontal, Settings, Trash2, Edit, PlusCircle, Save } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -89,7 +88,7 @@ function EditDeckSheet({ deck }: { deck: Deck }) {
 
 
 export default function ManageDecksPage() {
-    const [decks, setDecks] = useState(USER_DECKS);
+    const [decks, setDecks] = useState<Deck[]>([]);
     const [isAlertOpen, setIsAlertOpen] = useState(false);
     const [deckToDelete, setDeckToDelete] = useState<Deck | null>(null);
     const { toast } = useToast();
@@ -134,7 +133,7 @@ export default function ManageDecksPage() {
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {decks.map((deck) => (
+                    {decks.length > 0 ? decks.map((deck) => (
                         <TableRow key={deck.id}>
                             <TableCell className="font-medium">{deck.name}</TableCell>
                             <TableCell className="text-center">{deck.cards.length}</TableCell>
@@ -148,7 +147,11 @@ export default function ManageDecksPage() {
                                 </div>
                             </TableCell>
                         </TableRow>
-                    ))}
+                    )) : (
+                        <TableRow>
+                            <TableCell colSpan={4} className="text-center h-24">你还没有任何卡组。</TableCell>
+                        </TableRow>
+                    )}
                 </TableBody>
             </Table>
             </CardContent>
