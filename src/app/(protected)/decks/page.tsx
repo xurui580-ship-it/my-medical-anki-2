@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { PlusCircle, BookOpen, Brain, Clock, FolderPlus, LogOut, Library, FileUp } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useDecks } from "@/contexts/DeckContext";
 
 function TodayStats() {
     const { user } = useAuth();
@@ -75,17 +76,15 @@ function EmptyDecksState() {
 }
 
 export default function DecksPage() {
-    const { user, logout } = useAuth();
-    // In the prototype, we will show an empty state for all users.
-    // When connected to a DB, this will fetch the user's actual decks.
-    const decksToShow: any[] = [];
+    const { logout } = useAuth();
+    const { decks } = useDecks();
 
     return (
         <div className="sm:ml-14">
             <div className="flex items-center justify-between mb-6">
                 <h1 className="text-3xl font-bold tracking-tight">我的卡组</h1>
                 <div className="flex items-center gap-4">
-                 {decksToShow.length > 0 && (
+                 {decks.length > 0 && (
                     <Button asChild variant="warm">
                         <Link href="/add-manual">
                             <PlusCircle className="mr-2 h-4 w-4" /> 新建卡组
@@ -101,9 +100,9 @@ export default function DecksPage() {
 
             <TodayStats />
 
-            {decksToShow.length === 0 ? <EmptyDecksState /> : (
+            {decks.length === 0 ? <EmptyDecksState /> : (
                  <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                    {decksToShow.map((deck) => (
+                    {decks.map((deck) => (
                         <Card key={deck.id} className="flex flex-col glass-card hover:shadow-primary/20 transition-shadow duration-300">
                             <CardHeader>
                                 <CardTitle className="truncate">{deck.name}</CardTitle>

@@ -21,7 +21,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import type { Deck } from "@/lib/types";
+import type { Deck, Card as CardType } from "@/lib/types";
 import { MoreHorizontal, Settings, Trash2, Edit, PlusCircle, Save } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
@@ -29,16 +29,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { useDecks } from "@/contexts/DeckContext";
 
-function EditDeckSheet({ deck }: { deck: Deck }) {
-    // This state would be managed by a form library in a real app
-    const [cards, setCards] = useState(deck.cards);
+function EditDeckSheet({ deck: initialDeck }: { deck: Deck }) {
+    const { updateDeck } = useDecks();
+    const [deckName, setDeckName] = useState(initialDeck.name);
+    const [cards, setCards] = useState<CardType[]>(initialDeck.cards);
     const { toast } = useToast();
 
     const handleSave = () => {
-        // API call to save changes
-        console.log("Saving changes for deck:", deck.id, cards);
-        toast({ title: "卡片已更新", description: `"${deck.name}" 中的卡片已保存。`});
+        const updatedDeck = { ...initialDeck, name: deckName, cards };
+        updateDeck(updatedDeck);
+        toast({ title: "卡组已更新", description: `"${deckName}" 已成功保存。`});
     }
 
     const handleAddCard = () => {
@@ -48,17 +50,27 @@ function EditDeckSheet({ deck }: { deck: Deck }) {
     const handleRemoveCard = (cardId: string) => {
         setCards(cards.filter(c => c.id !== cardId));
     }
+    
+    const handleCardChange = (cardId: string, field: 'q' | 'a', value: string) => {
+        setCards(cards.map(c => c.id === cardId ? { ...c, [field]: value } : c));
+    }
 
     return (
         <Sheet>
             <SheetTrigger asChild>
-                <Button variant="outline" size="sm"><Edit className="mr-2 h-4 w-4" />编辑卡片</Button>
+                <Button variant="outline" size="sm"><Edit className="mr-2 h-4 w-4" />编辑卡组</Button>
             </SheetTrigger>
             <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
                 <SheetHeader>
-                    <SheetTitle>编辑卡组: {deck.name}</SheetTitle>
+                    <SheetTitle>编辑卡组: {initialDeck.name}</SheetTitle>
                 </SheetHeader>
                 <div className="py-4 space-y-4">
+                    <Card className="glass-card">
+                        <CardContent className="p-4">
+                             <Label>卡组名称</Label>
+                             <Input value={deckName} onChange={(e) => setDeckName(e.target.value)} />
+                        </CardContent>
+                    </Card>
                     {cards.map((card, index) => (
                         <Card key={card.id} className="relative glass-card">
                              <Button variant="ghost" size="icon" className="absolute top-2 right-2 h-7 w-7" onClick={() => handleRemoveCard(card.id)}>
@@ -67,11 +79,11 @@ function EditDeckSheet({ deck }: { deck: Deck }) {
                             <CardContent className="p-4 grid gap-2">
                                 <div>
                                     <Label>问题 {index + 1}</Label>
-                                    <Textarea defaultValue={card.q} />
+                                    <Textarea value={card.q} onChange={(e) => handleCardChange(card.id, 'q', e.target.value)} />
                                 </div>
                                 <div>
                                     <Label>答案 {index + 1}</Label>
-                                    <Textarea defaultValue={card.a} />
+                                    <Textarea value={card.a} onChange={(e) => handleCardChange(card.id, 'a', e.target.value)} />
                                 </div>
                             </CardContent>
                         </Card>
@@ -88,7 +100,7 @@ function EditDeckSheet({ deck }: { deck: Deck }) {
 
 
 export default function ManageDecksPage() {
-    const [decks, setDecks] = useState<Deck[]>([]);
+    const { decks, removeDeck } = useDecks();
     const [isAlertOpen, setIsAlertOpen] = useState(false);
     const [deckToDelete, setDeckToDelete] = useState<Deck | null>(null);
     const { toast } = useToast();
@@ -100,7 +112,7 @@ export default function ManageDecksPage() {
 
     const confirmDelete = () => {
         if (deckToDelete) {
-            setDecks(decks.filter(d => d.id !== deckToDelete.id));
+            removeDeck(deckToDelete.id);
             toast({
                 title: "卡组已删除",
                 description: `卡组 "${deckToDelete.name}" 已被永久删除。`,
@@ -142,7 +154,7 @@ export default function ManageDecksPage() {
                                 <div className="flex items-center justify-end gap-2">
                                 <EditDeckSheet deck={deck} />
                                 <Button variant="destructive" size="sm" onClick={() => handleDeleteClick(deck)}>
-                                    <Trash2 className="mr-2 h-4 w-4" />删除卡组
+                                    <Trash2 className="mr-2 h-4 w-4" />删除
                                 </Button>
                                 </div>
                             </TableCell>

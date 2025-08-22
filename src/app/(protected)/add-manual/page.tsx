@@ -11,6 +11,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { PlusCircle, Save, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
+import { useDecks } from "@/contexts/DeckContext";
+import type { Card as CardType } from "@/lib/types";
 
 const cardSchema = z.object({
   q: z.string().min(1, "问题不能为空"),
@@ -25,6 +27,7 @@ const deckSchema = z.object({
 export default function AddManualPage() {
   const { toast } = useToast();
   const router = useRouter();
+  const { addDeck } = useDecks();
 
   const form = useForm<z.infer<typeof deckSchema>>({
     resolver: zodResolver(deckSchema),
@@ -40,8 +43,26 @@ export default function AddManualPage() {
   });
 
   const onSubmit = (data: z.infer<typeof deckSchema>) => {
-    // In a real app, you'd send this to your backend.
-    console.log(data);
+    const newDeck = {
+        id: `user-${Date.now()}`,
+        name: data.name,
+        source: 'manual' as const,
+        createdAt: new Date().toISOString(),
+        dailyNewLearned: 0,
+        reviewModeToday: false,
+        cards: data.cards.map((c, index) => ({
+            id: `card-${Date.now()}-${index}`,
+            q: c.q,
+            a: c.a,
+            isNew: true,
+            ease: 2.5,
+            intervalDays: 0,
+            repetitions: 0,
+            dueAt: new Date().toISOString(),
+            history: [],
+        })) as CardType[],
+    };
+    addDeck(newDeck);
     toast({
       title: "卡组已保存",
       description: `卡组 "${data.name}" 已成功创建。`,

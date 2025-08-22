@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { DeckProvider } from "@/contexts/DeckContext";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Loader2 } from "lucide-react";
 import { BrainIcon } from "@/components/shared/icons";
@@ -30,14 +31,16 @@ function ProtectedLayoutContent({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="flex min-h-screen w-full bg-background">
-      <Sidebar />
-      <main className="flex-1 flex flex-col h-screen">
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8">
-            {children}
+    <DeckProvider>
+        <div className="flex min-h-screen w-full bg-background">
+        <Sidebar />
+        <main className="flex-1 flex flex-col h-screen">
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8">
+                {children}
+            </div>
+        </main>
         </div>
-      </main>
-    </div>
+    </DeckProvider>
   );
 }
 
