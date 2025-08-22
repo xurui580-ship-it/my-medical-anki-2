@@ -1,14 +1,19 @@
+"use client";
+
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { PlusCircle, BookOpen, Brain, Clock } from "lucide-react";
 import { USER_DECKS } from "@/lib/mock-data";
+import { useAuth } from "@/contexts/AuthContext";
 
 function TodayStats() {
-    // In a real app, this data would come from a hook or API call
-    const stats = {
-        learned: 15,
-        reviewed: 42,
+    const { user } = useAuth();
+
+    // Use user's stats if available, otherwise default to 0
+    const stats = user?.todayStats ?? {
+        learned: 0,
+        reviewed: 0,
     };
 
     return (
