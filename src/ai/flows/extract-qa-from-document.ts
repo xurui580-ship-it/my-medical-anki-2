@@ -54,7 +54,6 @@ export async function extractQaFromDocument(
 const prompt = ai.definePrompt({
   name: 'extractQaFromDocumentPrompt',
   input: {schema: ExtractQaFromDocumentInputSchema},
-  output: {schema: ExtractQaFromDocumentOutputSchema},
   model: googleAI('gemini-1.5-pro-latest'),
   output: {
     format: 'json',
