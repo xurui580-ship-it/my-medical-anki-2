@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { PlusCircle, BookOpen, Brain, Clock, FolderPlus } from "lucide-react";
+import { PlusCircle, BookOpen, Brain, Clock, FolderPlus, LogOut } from "lucide-react";
 import { USER_DECKS } from "@/lib/mock-data";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -80,7 +80,7 @@ function EmptyDecksState() {
 }
 
 export default function DecksPage() {
-    const { user } = useAuth();
+    const { user, logout } = useAuth();
     // For demo purposes, only 'test' user sees the mock decks.
     const decksToShow = user?.username === 'test' ? USER_DECKS : [];
 
@@ -88,6 +88,7 @@ export default function DecksPage() {
         <div className="sm:ml-14">
             <div className="flex items-center justify-between mb-6">
                 <h1 className="text-3xl font-bold tracking-tight">我的卡组</h1>
+                <div className="flex items-center gap-4">
                  {decksToShow.length > 0 && (
                     <Button asChild variant="warm">
                         <Link href="/add-manual">
@@ -95,6 +96,11 @@ export default function DecksPage() {
                         </Link>
                     </Button>
                  )}
+                 <Button variant="outline" size="sm" onClick={logout}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    退出登录
+                 </Button>
+                </div>
             </div>
 
             <TodayStats />
