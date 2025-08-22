@@ -35,13 +35,32 @@ function EditDeckSheet({ deck: initialDeck }: { deck: Deck }) {
     const { updateDeck } = useDecks();
     const [deckName, setDeckName] = useState(initialDeck.name);
     const [cards, setCards] = useState<CardType[]>(initialDeck.cards);
+    const [isConfirmingSave, setIsConfirmingSave] = useState(false);
+    const [sheetOpen, setSheetOpen] = useState(false);
     const { toast } = useToast();
 
-    const handleSave = () => {
-        const updatedDeck = { ...initialDeck, name: deckName, cards };
+    const emptyCards = cards.filter(c => c.q.trim() === '' || c.a.trim() === '');
+
+    const handleSaveAttempt = () => {
+        if (emptyCards.length > 0) {
+            setIsConfirmingSave(true);
+        } else {
+            saveDeck(cards);
+        }
+    }
+
+    const saveDeck = (cardsToSave: CardType[]) => {
+        const updatedDeck = { ...initialDeck, name: deckName, cards: cardsToSave };
         updateDeck(updatedDeck);
         toast({ title: "卡组已更新", description: `"${deckName}" 已成功保存。`});
+        setSheetOpen(false); // Close sheet on successful save
     }
+
+    const confirmSaveWithDeletion = () => {
+        const nonEmptyCards = cards.filter(c => c.q.trim() !== '' && c.a.trim() !== '');
+        saveDeck(nonEmptyCards);
+        setIsConfirmingSave(false);
+    };
 
     const handleAddCard = () => {
         setCards([...cards, { id: `new-${Date.now()}`, q: "", a: "", isNew: true, ease: 2.5, intervalDays: 0, repetitions: 0, dueAt: new Date().toISOString(), history: [] }]);
@@ -56,7 +75,7 @@ function EditDeckSheet({ deck: initialDeck }: { deck: Deck }) {
     }
 
     return (
-        <Sheet>
+        <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
             <SheetTrigger asChild>
                 <Button variant="outline" size="sm"><Edit className="mr-2 h-4 w-4" />编辑卡组</Button>
             </SheetTrigger>
@@ -91,8 +110,24 @@ function EditDeckSheet({ deck: initialDeck }: { deck: Deck }) {
                 </div>
                  <div className="flex justify-between mt-4">
                     <Button variant="outline" onClick={handleAddCard}><PlusCircle className="mr-2 h-4 w-4"/>添加卡片</Button>
-                    <Button variant="warm" onClick={handleSave}><Save className="mr-2 h-4 w-4"/>保存更改</Button>
+                    <Button variant="warm" onClick={handleSaveAttempt}><Save className="mr-2 h-4 w-4"/>保存更改</Button>
                 </div>
+                <AlertDialog open={isConfirmingSave} onOpenChange={setIsConfirmingSave}>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>确认保存操作</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                检测到有 {emptyCards.length} 张卡片的问题或答案为空。您要删除这些不完整的卡片并保存吗？
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>返回编辑</AlertDialogCancel>
+                            <AlertDialogAction onClick={confirmSaveWithDeletion} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                确认删除并保存
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
             </SheetContent>
         </Sheet>
     )
