@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { PlusCircle, BookOpen, Brain, Clock, FolderPlus, LogOut } from "lucide-react";
+import { PlusCircle, BookOpen, Brain, Clock, FolderPlus, LogOut, Library, FileUp } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 function TodayStats() {
@@ -54,16 +54,20 @@ function EmptyDecksState() {
                 是时候开始构建你的医学知识殿堂了！从下面选择一种方式，添加你的第一个卡组吧。
             </p>
             <div className="flex flex-wrap justify-center gap-4">
-                 <Button asChild variant="warm" size="lg">
+                 <Button asChild variant="outline" size="lg" className="border-primary text-primary hover:bg-primary/10 hover:text-primary">
                     <Link href="/add-manual">
                         <PlusCircle className="mr-2" /> 手动新建卡组
                     </Link>
                 </Button>
                  <Button asChild variant="outline" size="lg">
-                    <Link href="/add-system">系统卡组</Link>
+                    <Link href="/add-system">
+                        <Library className="mr-2" /> 系统卡组
+                    </Link>
                 </Button>
                 <Button asChild variant="outline" size="lg">
-                    <Link href="/add-document">文档导入</Link>
+                    <Link href="/add-document">
+                        <FileUp className="mr-2" /> 文档导入
+                    </Link>
                 </Button>
             </div>
         </div>
