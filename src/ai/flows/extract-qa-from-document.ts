@@ -12,7 +12,6 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 import {googleAI} from '@genkit-ai/googleai';
-import Handlebars from 'handlebars';
 
 const ExtractQaFromDocumentInputSchema = z.object({
   documentDataUri: z
@@ -45,7 +44,7 @@ const ExtractQaFromDocumentOutputSchema = z.array(z.union([ClozeCardSchema, QaCa
 
 export type ExtractQaFromDocumentOutput = z.infer<typeof ExtractQaFromDocumentOutputSchema>;
 
-const PROMPT_TEMPLATE = `
+const BASE_PROMPT = `
 # 角色与任务
 你是一位拥有医学背景的“医学教育”专家，擅长从医学教材、研究文献或临床指南中提取核心知识，并制作出用于高效记忆和理解的Anki卡片。你的唯一任务是根据用户提供的医学文档内容，生成一系列高质量、高精度的Anki记忆卡片。
 
@@ -90,13 +89,8 @@ const PROMPT_TEMPLATE = `
 - 如果一张卡片是关于文档中的某张图片的，你应该在输出的JSON对象中包含 'media' 字段。
 - **'media' 字段的值必须是与图片问题相关的图片本身，以Data URI (Base64) 的格式提供。模型有能力从文档中提取图片并转换为Data URI。**
 
-# 用户指定的重点
-{{#if focus}}
-用户希望你重点关注以下内容，并适当增加相关内容的题目比例与细致程度：{{focus}}
-{{/if}}
-
 # 输出格式与结构
-你必须**严格**按照以下JSON数组格式输出，每张卡作为一个对象，且不能有任何其他前言后语。
+你必须**严格**按照以下JSON数组格式输出，每张卡片作为一个对象，且不能有任何其他前言后语。
 
 \`\`\`json
 [
@@ -123,15 +117,17 @@ const PROMPT_TEMPLATE = `
   }
 ]
 \`\`\`
-
-Here is the document:
 `;
 
 export async function extractQaFromDocument(
   input: ExtractQaFromDocumentInput
 ): Promise<ExtractQaFromDocumentOutput> {
-    const template = Handlebars.compile(PROMPT_TEMPLATE);
-    const finalPrompt = template({ focus: input.focus });
+  
+  let finalPrompt = BASE_PROMPT;
+  if (input.focus) {
+    finalPrompt += `\n# 用户指定的重点\n用户希望你重点关注以下内容，并适当增加相关内容的题目比例与细致程度：${input.focus}`;
+  }
+  finalPrompt += `\nHere is the document:`;
 
   const { output } = await ai.generate({
     model: googleAI('gemini-1.5-pro-latest'),
