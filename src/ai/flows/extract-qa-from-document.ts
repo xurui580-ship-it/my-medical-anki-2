@@ -54,11 +54,8 @@ export async function extractQaFromDocument(
 const prompt = ai.definePrompt({
   name: 'extractQaFromDocumentPrompt',
   input: {schema: ExtractQaFromDocumentInputSchema},
+  output: {schema: ExtractQaFromDocumentOutputSchema},
   model: googleAI('gemini-1.5-pro-latest'),
-  output: {
-    format: 'json',
-    schema: ExtractQaFromDocumentOutputSchema,
-  },
   prompt: `
 # 角色与任务
 你是一位拥有医学背景的“医学教育”专家，擅长从医学教材、研究文献或临床指南中提取核心知识，并制作出用于高效记忆和理解的Anki卡片。你的唯一任务是根据用户提供的医学文档内容，生成一系列高质量、高精度的Anki记忆卡片。
@@ -150,9 +147,7 @@ const extractQaFromDocumentFlow = ai.defineFlow(
     outputSchema: ExtractQaFromDocumentOutputSchema,
   },
   async (input) => {
-    const { output } = await prompt.generate({
-        input,
-    });
+    const { output } = await prompt(input);
     return output!;
   }
 );

@@ -28,9 +28,9 @@ export function DocumentUploadForm() {
   const { toast } = useToast();
   const router = useRouter();
   const documentFile = watch("document");
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const { ref: formRef, ...formRest } = register("document");
+  const { ref: documentFormRef, ...documentFormRest } = register("document");
 
   const groupedCards = useMemo(() => {
     if (formState !== 'reviewing') return {};
@@ -95,30 +95,21 @@ export function DocumentUploadForm() {
     router.push("/decks");
   };
 
+  const handleReplaceFileClick = () => {
+    fileInputRef.current?.click();
+  }
+
   const idleContent = (
     <div className="text-center">
         <UploadCloud className="w-12 h-12 mx-auto text-muted-foreground" />
         <p className="mt-2 text-sm text-muted-foreground">拖放文件到这里，或点击选择文件</p>
-        <Input 
-          id="document-upload" 
-          type="file" 
-          className="sr-only" 
-          accept=".pdf,.doc,.docx,.txt"
-          {...formRest}
-          ref={(e) => {
-            formRef(e);
-            if (fileInputRef) {
-                (fileInputRef as React.MutableRefObject<HTMLInputElement | null>).current = e;
-            }
-          }}
-        />
     </div>
   );
 
   const stateContent = {
     uploading: <><Loader2 className="w-12 h-12 mx-auto animate-spin" /><p className="mt-2">正在上传...</p></>,
     processing: <><Wand2 className="w-12 h-12 mx-auto animate-pulse text-primary" /><p className="mt-2">AI 正在努力提取中...</p></>,
-    error: <><AlertTriangle className="w-12 h-12 mx-auto text-destructive" /><p className="mt-2 text-destructive">{errorMessage}</p><Button onClick={() => setFormState('idle')} className="mt-4">重试</Button></>,
+    error: <><AlertTriangle className="w-12 h-12 mx-auto text-destructive" /><p className="mt-2 text-destructive">{errorMessage}</p><Button onClick={() => { setFormState('idle'); resetField('document');}} className="mt-4">重试</Button></>,
   };
 
   if (formState !== "reviewing") {
@@ -142,7 +133,7 @@ export function DocumentUploadForm() {
                                 className="mt-4"
                                 onClick={(e) => {
                                   e.preventDefault();
-                                  fileInputRef.current?.click();
+                                  handleReplaceFileClick();
                                 }}
                             >
                                 <Replace className="mr-2 h-4 w-4" /> 更换文件
@@ -152,6 +143,17 @@ export function DocumentUploadForm() {
                     }
                     </div>
                 </label>
+                <Input 
+                    id="document-upload" 
+                    type="file" 
+                    className="sr-only" 
+                    accept=".pdf,.doc,.docx,.txt"
+                    {...documentFormRest}
+                    ref={(e) => {
+                        documentFormRef(e);
+                        fileInputRef.current = e;
+                    }}
+                />
                  <div className="mt-6">
                     <Label htmlFor="focus-input" className="mb-2 block">重点提示 (选填)</Label>
                      <Input 
