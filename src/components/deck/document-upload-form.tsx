@@ -1,14 +1,14 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { extractQaFromDocument, ExtractQaFromDocumentOutput } from "@/ai/flows/extract-qa-from-document";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Loader2, UploadCloud, CheckCircle, AlertTriangle, Wand2, Save, Badge } from "lucide-react";
+import { Loader2, UploadCloud, CheckCircle, AlertTriangle, Wand2, Save, Badge, Folder, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -28,6 +28,19 @@ export function DocumentUploadForm() {
   const { toast } = useToast();
   const router = useRouter();
   const documentFile = watch("document");
+
+  const groupedCards = useMemo(() => {
+    if (formState !== 'reviewing') return {};
+
+    return extractedCards.reduce((acc, card) => {
+        const groupName = card.chapter || "未分类";
+        if (!acc[groupName]) {
+            acc[groupName] = [];
+        }
+        acc[groupName].push(card);
+        return acc;
+    }, {} as Record<string, ExtractQaFromDocumentOutput>);
+  }, [extractedCards, formState]);
 
 
   const onSubmit = async (data: FormValues) => {
@@ -133,35 +146,50 @@ export function DocumentUploadForm() {
                  <CardDescription>AI 从您的文档中提取了 {extractedCards.length} 张卡片。请检查并确认后保存。</CardDescription>
             </CardHeader>
             <CardContent>
-                 <Accordion type="single" collapsible className="w-full">
-                    {extractedCards.map((card, index) => (
-                        <AccordionItem value={`item-${index}`} key={index}>
-                            <AccordionTrigger>
-                               <div className="flex items-center gap-2">
-                                <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${card.type === 'cloze' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}`}>
-                                    {card.type === 'cloze' ? '填空' : '问答'}
-                                </span>
-                                <span>{card.type === 'cloze' ? card.content.substring(0, 80) + '...' : `Q${index+1}: ${card.front}`}</span>
-                               </div>
-                            </AccordionTrigger>
-                            <AccordionContent className="text-base space-y-4">
-                                {card.media && <img src={card.media} alt="Card media" className="max-w-full max-h-48 rounded-md" />}
-                                {card.type === 'cloze' ? (
-                                    <div dangerouslySetInnerHTML={{ __html: card.content.replace(/{{c1::(.*?)}}/g, '<strong class="text-primary">[$1]</strong>') }} />
-                                ) : (
-                                    <div>
-                                        <p><strong>答案:</strong> {card.back}</p>
-                                    </div>
-                                )}
-                                <div className="flex gap-2 flex-wrap">
-                                    {card.tags.map(tag => (
-                                        <span key={tag} className="text-xs bg-muted text-muted-foreground px-2 py-1 rounded-md">{tag}</span>
+                 <Accordion type="multiple" className="w-full space-y-4">
+                    {Object.entries(groupedCards).map(([chapter, cards]) => (
+                        <AccordionItem value={chapter} key={chapter} className="border-none">
+                            <Card className="bg-muted/50">
+                                <CardHeader className="p-0">
+                                    <AccordionTrigger className="flex items-center gap-3 p-4 text-lg font-semibold">
+                                        <Folder className="h-5 w-5 text-primary" />
+                                        <span>{chapter}</span>
+                                        <Badge variant="secondary" className="ml-auto">{cards.length}张卡片</Badge>
+                                    </AccordionTrigger>
+                                </CardHeader>
+                                <AccordionContent className="p-4 pt-0">
+                                    <div className="space-y-2">
+                                    {cards.map((card, index) => (
+                                        <Card key={index} className="bg-background">
+                                            <CardContent className="p-4 space-y-3">
+                                                 <div className="flex items-start gap-2">
+                                                    <FileText className="h-4 w-4 mt-1 text-muted-foreground"/>
+                                                    <div className="flex-1">
+                                                    {card.type === 'cloze' ? (
+                                                        <div dangerouslySetInnerHTML={{ __html: card.content.replace(/{{c1::(.*?)}}/g, '<strong class="text-primary">[$1]</strong>') }} />
+                                                    ) : (
+                                                        <div>
+                                                            <p><strong>问题:</strong> {card.front}</p>
+                                                            <p><strong>答案:</strong> {card.back}</p>
+                                                        </div>
+                                                    )}
+                                                    </div>
+                                                 </div>
+                                                 {card.media && <img src={card.media} alt="Card media" className="max-w-full max-h-48 rounded-md border" />}
+                                                <div className="flex gap-2 flex-wrap pt-2 border-t border-dashed">
+                                                    {card.tags.map(tag => (
+                                                        <span key={tag} className="text-xs bg-muted text-muted-foreground px-2 py-1 rounded-md">{tag}</span>
+                                                    ))}
+                                                </div>
+                                            </CardContent>
+                                        </Card>
                                     ))}
-                                </div>
-                            </AccordionContent>
+                                    </div>
+                                </AccordionContent>
+                            </Card>
                         </AccordionItem>
                     ))}
-                </Accordion>
+                 </Accordion>
             </CardContent>
         </Card>
         <div className="flex justify-end gap-4">
@@ -177,5 +205,4 @@ export function DocumentUploadForm() {
     </div>
   );
 }
-
-    
+`

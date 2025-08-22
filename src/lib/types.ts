@@ -15,6 +15,7 @@ export interface Card {
   id: string;
   q: string;
   a: string;
+  chapter?: string;
   media?: string;
   isNew: boolean;
   ease: number;
@@ -34,5 +35,4 @@ export interface Deck {
   reviewModeToday: boolean;
   cards: Card[];
 }
-
-    
+`
