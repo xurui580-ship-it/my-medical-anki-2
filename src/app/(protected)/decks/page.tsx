@@ -10,17 +10,10 @@ import { useAuth } from "@/contexts/AuthContext";
 function TodayStats() {
     const { user } = useAuth();
 
-    // Use user's stats if available, otherwise default to 0
-    const stats = user?.todayStats ?? {
-        learned: 0,
-        reviewed: 0,
-    };
-    
-    // Check if the date is current, otherwise reset stats
-    const today = new Date().toISOString().split('T')[0];
-    const userLearned = user?.todayStats?.dateISO === today ? user.todayStats.learned : 0;
-    const userReviewed = user?.todayStats?.dateISO === today ? user.todayStats.reviewed : 0;
-
+    // In a real app, this would come from the user's DB record.
+    // For now, we'll just show 0 for everyone as mock data is confusing.
+    const userLearned = 0;
+    const userReviewed = 0;
 
     return (
         <Card className="glass-card mb-8">
@@ -81,8 +74,9 @@ function EmptyDecksState() {
 
 export default function DecksPage() {
     const { user, logout } = useAuth();
-    // For demo purposes, only 'test' user sees the mock decks.
-    const decksToShow = user?.username === 'test' ? USER_DECKS : [];
+    // In the prototype, we will show an empty state for all users.
+    // When connected to a DB, this will fetch the user's actual decks.
+    const decksToShow: any[] = [];
 
     return (
         <div className="sm:ml-14">
