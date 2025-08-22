@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { PlusCircle, BookOpen, Brain, Clock } from "lucide-react";
+import { PlusCircle, BookOpen, Brain, Clock, FolderPlus } from "lucide-react";
 import { USER_DECKS } from "@/lib/mock-data";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -15,6 +15,12 @@ function TodayStats() {
         learned: 0,
         reviewed: 0,
     };
+    
+    // Check if the date is current, otherwise reset stats
+    const today = new Date().toISOString().split('T')[0];
+    const userLearned = user?.todayStats?.dateISO === today ? user.todayStats.learned : 0;
+    const userReviewed = user?.todayStats?.dateISO === today ? user.todayStats.reviewed : 0;
+
 
     return (
         <Card className="glass-card mb-8">
@@ -31,7 +37,7 @@ function TodayStats() {
                     </div>
                     <div>
                         <p className="text-muted-foreground">新学卡片</p>
-                        <p className="text-2xl font-bold">{stats.learned}</p>
+                        <p className="text-2xl font-bold">{userLearned}</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-4">
@@ -40,7 +46,7 @@ function TodayStats() {
                     </div>
                     <div>
                         <p className="text-muted-foreground">复习卡片</p>
-                        <p className="text-2xl font-bold">{stats.reviewed}</p>
+                        <p className="text-2xl font-bold">{userReviewed}</p>
                     </div>
                 </div>
             </CardContent>
@@ -48,53 +54,86 @@ function TodayStats() {
     );
 }
 
+function EmptyDecksState() {
+    return (
+        <div className="text-center mt-16 flex flex-col items-center">
+            <FolderPlus className="w-20 h-20 text-muted-foreground mb-4" />
+            <h2 className="text-2xl font-bold mb-2">你的知识库空空如也</h2>
+            <p className="text-muted-foreground mb-6 max-w-md">
+                是时候开始构建你的医学知识殿堂了！从下面选择一种方式，添加你的第一个卡组吧。
+            </p>
+            <div className="flex flex-wrap justify-center gap-4">
+                 <Button asChild variant="warm" size="lg">
+                    <Link href="/add-manual">
+                        <PlusCircle className="mr-2" /> 手动新建卡组
+                    </Link>
+                </Button>
+                 <Button asChild variant="outline" size="lg">
+                    <Link href="/add-system">系统卡组</Link>
+                </Button>
+                <Button asChild variant="outline" size="lg">
+                    <Link href="/add-document">文档导入</Link>
+                </Button>
+            </div>
+        </div>
+    );
+}
+
 export default function DecksPage() {
+    const { user } = useAuth();
+    // For demo purposes, only 'test' user sees the mock decks.
+    const decksToShow = user?.username === 'test' ? USER_DECKS : [];
+
     return (
         <div className="sm:ml-14">
             <div className="flex items-center justify-between mb-6">
                 <h1 className="text-3xl font-bold tracking-tight">我的卡组</h1>
-                <Button asChild variant="warm">
-                    <Link href="/add-manual">
-                        <PlusCircle className="mr-2 h-4 w-4" /> 新建卡组
-                    </Link>
-                </Button>
+                 {decksToShow.length > 0 && (
+                    <Button asChild variant="warm">
+                        <Link href="/add-manual">
+                            <PlusCircle className="mr-2 h-4 w-4" /> 新建卡组
+                        </Link>
+                    </Button>
+                 )}
             </div>
 
             <TodayStats />
 
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {USER_DECKS.map((deck) => (
-                    <Card key={deck.id} className="flex flex-col glass-card hover:shadow-primary/20 transition-shadow duration-300">
-                        <CardHeader>
-                            <CardTitle className="truncate">{deck.name}</CardTitle>
-                            <CardDescription>{deck.cards.length} 张卡片</CardDescription>
+            {decksToShow.length === 0 ? <EmptyDecksState /> : (
+                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                    {decksToShow.map((deck) => (
+                        <Card key={deck.id} className="flex flex-col glass-card hover:shadow-primary/20 transition-shadow duration-300">
+                            <CardHeader>
+                                <CardTitle className="truncate">{deck.name}</CardTitle>
+                                <CardDescription>{deck.cards.length} 张卡片</CardDescription>
+                            </CardHeader>
+                            <CardContent className="flex-grow flex flex-col justify-end">
+                                <div className="text-sm text-muted-foreground mb-4">
+                                    <p>待复习: {deck.cards.filter(c => new Date(c.dueAt) <= new Date()).length}</p>
+                                    <p>新卡片: {deck.cards.filter(c => c.isNew).length}</p>
+                                </div>
+                                <Button asChild className="w-full">
+                                    <Link href={`/decks/${deck.id}/study`}>开始学习</Link>
+                                </Button>
+                            </CardContent>
+                        </Card>
+                    ))}
+                    <Card className="flex flex-col items-center justify-center border-2 border-dashed bg-transparent glass-card hover:border-primary transition-colors duration-300">
+                        <CardHeader className="items-center text-center">
+                            <CardTitle>添加更多卡组</CardTitle>
+                            <CardDescription>从系统或文档中导入</CardDescription>
                         </CardHeader>
-                        <CardContent className="flex-grow flex flex-col justify-end">
-                            <div className="text-sm text-muted-foreground mb-4">
-                                <p>待复习: {deck.cards.filter(c => new Date(c.dueAt) <= new Date()).length}</p>
-                                <p>新卡片: {deck.cards.filter(c => c.isNew).length}</p>
-                            </div>
-                            <Button asChild className="w-full">
-                                <Link href={`/decks/${deck.id}/study`}>开始学习</Link>
+                        <CardContent className="flex flex-col gap-2 w-full px-10">
+                            <Button asChild variant="outline">
+                                <Link href="/add-system">系统卡组</Link>
+                            </Button>
+                            <Button asChild variant="outline">
+                                <Link href="/add-document">文档导入</Link>
                             </Button>
                         </CardContent>
                     </Card>
-                ))}
-                 <Card className="flex flex-col items-center justify-center border-2 border-dashed bg-transparent glass-card hover:border-primary transition-colors duration-300">
-                    <CardHeader className="items-center text-center">
-                        <CardTitle>添加更多卡组</CardTitle>
-                        <CardDescription>从系统或文档中导入</CardDescription>
-                    </CardHeader>
-                    <CardContent className="flex flex-col gap-2 w-full px-10">
-                        <Button asChild variant="outline">
-                            <Link href="/add-system">系统卡组</Link>
-                        </Button>
-                        <Button asChild variant="outline">
-                            <Link href="/add-document">文档导入</Link>
-                        </Button>
-                    </CardContent>
-                </Card>
-            </div>
+                </div>
+            )}
         </div>
     );
 }
