@@ -128,7 +128,7 @@ Here is the document:
 
 const extractQaFromDocumentPrompt = ai.definePrompt({
     name: 'extractQaFromDocumentPrompt',
-    input: { schema: ExtractQaFromDocumentInputSchema },
+    input: { schema: z.any() },
     output: { schema: ExtractQaFromDocumentOutputSchema, format: "json" },
     prompt: PROMPT_TEMPLATE,
     model: 'googleai/gemini-1.5-pro-latest',
