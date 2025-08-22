@@ -11,6 +11,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import {googleAI} from '@genkit-ai/googleai';
 
 const ExtractQaFromDocumentInputSchema = z.object({
   documentDataUri: z
@@ -131,7 +132,7 @@ const extractQaFromDocumentPrompt = ai.definePrompt({
     input: { schema: z.any() },
     output: { schema: ExtractQaFromDocumentOutputSchema, format: "json" },
     prompt: PROMPT_TEMPLATE,
-    model: 'googleai/gemini-1.5-pro-latest',
+    model: googleAI('gemini-1.5-pro-latest'),
     config: {
         temperature: 0.2
     }
