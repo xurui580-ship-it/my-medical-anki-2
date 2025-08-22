@@ -30,6 +30,8 @@ export function DocumentUploadForm() {
   const documentFile = watch("document");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const { ref: formRef, ...formRest } = register("document");
+
   const groupedCards = useMemo(() => {
     if (formState !== 'reviewing') return {};
 
@@ -101,9 +103,14 @@ export function DocumentUploadForm() {
           id="document-upload" 
           type="file" 
           className="sr-only" 
-          {...register("document")} 
           accept=".pdf,.doc,.docx,.txt"
-          ref={fileInputRef} 
+          {...formRest}
+          ref={(e) => {
+            formRef(e);
+            if (fileInputRef) {
+                (fileInputRef as React.MutableRefObject<HTMLInputElement | null>).current = e;
+            }
+          }}
         />
     </div>
   );
