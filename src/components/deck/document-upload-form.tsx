@@ -145,6 +145,7 @@ export function DocumentUploadForm() {
                                </div>
                             </AccordionTrigger>
                             <AccordionContent className="text-base space-y-4">
+                                {card.media && <img src={card.media} alt="Card media" className="max-w-full max-h-48 rounded-md" />}
                                 {card.type === 'cloze' ? (
                                     <div dangerouslySetInnerHTML={{ __html: card.content.replace(/{{c1::(.*?)}}/g, '<strong class="text-primary">[$1]</strong>') }} />
                                 ) : (
@@ -176,3 +177,5 @@ export function DocumentUploadForm() {
     </div>
   );
 }
+
+    

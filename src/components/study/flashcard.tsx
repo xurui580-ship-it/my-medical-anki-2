@@ -22,6 +22,7 @@ export function Flashcard({ card, showAnswer, onShowAnswer, onRate }: FlashcardP
             <Card className="w-full glass-card min-h-[300px] flex flex-col">
                 <CardContent className="p-6 flex-grow flex flex-col justify-center items-center text-center">
                     <p className="text-muted-foreground mb-4">问题</p>
+                    {card.media && <img src={card.media} alt="Card media" className="max-w-full max-h-64 rounded-md mb-4" />}
                     <p className="text-2xl md:text-3xl font-semibold">{card.q}</p>
                 </CardContent>
                 {showAnswer && (
@@ -58,3 +59,5 @@ export function Flashcard({ card, showAnswer, onShowAnswer, onRate }: FlashcardP
         </div>
     );
 }
+
+    

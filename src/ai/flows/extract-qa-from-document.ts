@@ -26,6 +26,7 @@ const ClozeCardSchema = z.object({
     type: z.literal("cloze"),
     content: z.string().describe("The full medical statement with the key information hidden using {{c1::...}}."),
     tags: z.array(z.string()).describe("Tags related to the card content (e.g., discipline, system, disease)."),
+    media: z.string().optional().describe("An optional data URI for an image related to the card."),
 });
 
 const QaCardSchema = z.object({
@@ -33,6 +34,7 @@ const QaCardSchema = z.object({
     front: z.string().describe("A clear, specific clinical or mechanistic question."),
     back: z.string().describe("A precise, concise, and structured answer."),
     tags: z.array(z.string()).describe("Tags related to the card content."),
+    media: z.string().optional().describe("An optional data URI for an image related to the card."),
 });
 
 const ExtractQaFromDocumentOutputSchema = z.array(z.union([ClozeCardSchema, QaCardSchema]));
@@ -57,13 +59,14 @@ const prompt = ai.definePrompt({
 - **绝对精确与基于证据**：所有卡片内容必须严格基于提供的医学文献，不得有任何编造、推测或与原文相悖的信息。术语、数值、流程必须100%准确。
 - **强调关联与机制**：优先选择文档中描述**机制、通路、病理生理、药理作用、鉴别诊断、临床意义**的内容进行提问，而非孤立的事实。
 - **促进临床思维**：问题应模拟临床推理，促进对知识的深度理解和应用，而不仅仅是死记硬背。
+- **图像整合**：如果文档中包含图片（如图表、X光片、病理切片等），并且图片对于理解某个知识点至关重要，请创建与该图片相关的卡片。将图片内容作为问题的一部分。
 
 # 卡片内容要求（Cloze occlusion 和 Q&A 两种格式）
 请生成两种类型的卡片：
 
 ## 1. 填空题 (Cloze Deletion) - 适用于精确记忆
 - **内容**：选择包含**关键医学名词、数值、标准、分级名称**的句子。
-- ** omissions**：每次**仅隐藏一个**最关键的信息点（如：一个病原体名称、一个药物靶点、一个实验室诊断标准值）。确保隐藏后，句子上下文能提供足够的推理线索。
+- **省略**：每次**仅隐藏一个**最关键的信息点（如：一个病原体名称、一个药物靶点、一个实验室诊断标准值）。确保隐藏后，句子上下文能提供足够的推理线索。
 - **格式**：使用 \`{{c1::隐藏内容}}\` 格式明确标出。
 - **医学示例**：
   - 原文：”胃溃疡最常见的病因是幽门螺杆菌感染和非甾体抗炎药的使用。“
@@ -79,9 +82,14 @@ const prompt = ai.definePrompt({
     - **临床表现**：“库欣综合征的典型临床表现有哪些？”
     - **治疗原则**：“社区获得性肺炎的一线经验性抗生素选择有哪些？”
     - **药物作用**：“二甲双胍的主要药理作用机制是什么？”
+    - **图片问题**："根据这张X光片，最可能的诊断是什么？" 或 "图中箭头所指的细胞结构是什么？"
   - **要求**：问题必须临床相关、具体、无歧义。
 - **答案 (Back)**：
   - **要求**：答案应精准、简洁、结构化。优先使用列表、流程图或分级陈述（如“首要...其次...”）来组织复杂信息，但需基于原文。
+
+## 3. 图片处理
+- 如果一张卡片是关于文档中的某张图片的，你应该在输出的JSON对象中包含 'media' 字段。
+- **'media' 字段的值必须是与图片问题相关的图片本身，以Data URI (Base64) 的格式提供。模型有能力从文档中提取图片并转换为Data URI。**
 
 {{#if focus}}
 # 用户指定的重点
@@ -96,19 +104,27 @@ const prompt = ai.definePrompt({
   {
     "type": "cloze",
     "content": "完整的医学陈述句，其中{{c1::关键信息}}被隐藏。",
-    "tags": ["标签1", "标签2", ...]
+    "tags": ["标签1", "标签2", ...],
+    "media": "data:image/png;base64,..."
   },
   {
     "type": "qa",
-    "front": "清晰、具体的临床或机制问题",
+    "front": "关于图片的清晰问题",
     "back": "准确、简洁、结构化的答案",
+    "tags": ["标签1", "标签2", ...],
+    "media": "data:image/jpeg;base64,..."
+  },
+  {
+    "type": "qa",
+    "front": "纯文本问题",
+    "back": "纯文本答案",
     "tags": ["标签1", "标签2", ...]
   }
 ]
 \`\`\`
 
 Here is the document:
-{{documentDataUri}}
+{{media url=documentDataUri}}
 `
 });
 
