@@ -16,7 +16,7 @@ export default function LoginPage() {
                     ></div>
                     <div className="flex h-full w-full items-center justify-center p-10">
                         <div className="text-center">
-                            <h1 className="text-5xl font-bold text-primary">MediFlash</h1>
+                            <h1 className="text-5xl font-bold text-primary">MediAnki</h1>
                             <p className="mt-4 text-xl text-foreground/80">
                             高效记忆，轻松备考。
                             </p>
