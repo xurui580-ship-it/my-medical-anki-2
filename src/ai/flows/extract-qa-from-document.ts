@@ -12,6 +12,7 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 import {googleAI} from '@genkit-ai/googleai';
+import Handlebars from 'handlebars';
 
 const ExtractQaFromDocumentInputSchema = z.object({
   documentDataUri: z
@@ -129,18 +130,18 @@ Here is the document:
 export async function extractQaFromDocument(
   input: ExtractQaFromDocumentInput
 ): Promise<ExtractQaFromDocumentOutput> {
+    const template = Handlebars.compile(PROMPT_TEMPLATE);
+    const finalPrompt = template({ focus: input.focus });
+
   const { output } = await ai.generate({
     model: googleAI('gemini-1.5-pro-latest'),
     prompt: [
-        {text: PROMPT_TEMPLATE},
+        {text: finalPrompt},
         {media: {url: input.documentDataUri}}
     ],
     output: {
         schema: ExtractQaFromDocumentOutputSchema
-    },
-    context: [
-      { focus: input.focus },
-    ]
+    }
   });
   return output || [];
 }
