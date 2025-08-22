@@ -44,19 +44,7 @@ const ExtractQaFromDocumentOutputSchema = z.array(z.union([ClozeCardSchema, QaCa
 
 export type ExtractQaFromDocumentOutput = z.infer<typeof ExtractQaFromDocumentOutputSchema>;
 
-const prompt = ai.definePrompt({
-  name: 'extractQaPrompt',
-  model: googleAI('gemini-1.5-pro-latest'),
-  input: {
-      schema: z.object({
-          documentDataUri: z.string(),
-          focus: z.string().optional(),
-      })
-  },
-  output: {
-    schema: ExtractQaFromDocumentOutputSchema,
-  },
-  prompt: `
+const PROMPT_TEMPLATE = `
 # 角色与任务
 你是一位拥有医学背景的“医学教育”专家，擅长从医学教材、研究文献或临床指南中提取核心知识，并制作出用于高效记忆和理解的Anki卡片。你的唯一任务是根据用户提供的医学文档内容，生成一系列高质量、高精度的Anki记忆卡片。
 
@@ -118,7 +106,7 @@ const prompt = ai.definePrompt({
     "chapter": "第二章：影像学诊断",
     "front": "关于图片的清晰问题",
     "back": "准确、简洁、结构化的答案",
-    "tags": ["标签1", "标签2", ...],
+    "tags": ["标签1, "标签2", ...],
     "media": "data:image/jpeg;base64,..."
   },
   {
@@ -129,25 +117,39 @@ const prompt = ai.definePrompt({
   }
 ]
 \`\`\`
+`;
 
-{{#if focus}}
-# 用户指定的重点
-用户希望你重点关注以下内容，并适当增加相关内容的题目比例与细致程度：{{{focus}}}
-{{/if}}
-
-Here is the document:
-{{media url=documentDataUri}}
-  `,
-});
-
-export const extractQaFromDocument = ai.defineFlow(
+export const extractQaFromDocumentFlow = ai.defineFlow(
   {
     name: 'extractQaFromDocumentFlow',
     inputSchema: ExtractQaFromDocumentInputSchema,
     outputSchema: ExtractQaFromDocumentOutputSchema,
   },
   async (input) => {
-    const {output} = await prompt(input);
+    let finalPrompt = PROMPT_TEMPLATE;
+    if (input.focus) {
+        finalPrompt += `
+# 用户指定的重点
+用户希望你重点关注以下内容，并适当增加相关内容的题目比例与细致程度：${input.focus}
+`;
+    }
+    
+    finalPrompt += `\nHere is the document:`;
+
+    const { output } = await ai.generate({
+        model: googleAI('gemini-1.5-pro-latest'),
+        output: { schema: ExtractQaFromDocumentOutputSchema, format: 'json' },
+        prompt: [
+            { text: finalPrompt },
+            { media: { url: input.documentDataUri } }
+        ],
+    });
+
     return output || [];
   }
 );
+
+
+export async function extractQaFromDocument(input: ExtractQaFromDocumentInput): Promise<ExtractQaFromDocumentOutput> {
+    return extractQaFromDocumentFlow(input);
+}
