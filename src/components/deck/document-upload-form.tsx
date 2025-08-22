@@ -55,13 +55,19 @@ export function DocumentUploadForm() {
       reader.onload = async (e) => {
         const documentDataUri = e.target?.result as string;
         setFormState("processing");
-        const result = await extractQaFromDocument({ documentDataUri, focus: data.focus });
-        if (result && result.length > 0) {
-          setExtractedCards(result);
-          setFormState("reviewing");
-        } else {
-          setErrorMessage("无法从文档中提取任何卡片。请尝试其他文档。");
-          setFormState("error");
+        try {
+            const result = await extractQaFromDocument({ documentDataUri, focus: data.focus });
+            if (result && result.length > 0) {
+              setExtractedCards(result);
+              setFormState("reviewing");
+            } else {
+              setErrorMessage("无法从文档中提取任何卡片。请尝试其他文档。");
+              setFormState("error");
+            }
+        } catch(e) {
+            console.error(e);
+            setErrorMessage("AI在处理时发生错误，可能是文档内容过于复杂或格式不受支持。");
+            setFormState("error");
         }
       };
       reader.onerror = () => {
@@ -109,7 +115,10 @@ export function DocumentUploadForm() {
                     <div className="flex flex-col items-center justify-center text-center p-10 border-2 border-dashed rounded-lg hover:border-primary transition-colors">
                     {formState !== 'idle' ? stateContent[formState] : 
                         (documentFile && documentFile.length > 0) ? 
-                        <p className="text-sm text-primary">{documentFile[0].name}</p> 
+                        <div className="flex items-center gap-2 text-primary">
+                            <FileText />
+                            <span className="text-sm font-medium">{documentFile[0].name}</span>
+                        </div>
                         : idleContent
                     }
                     </div>
@@ -146,7 +155,7 @@ export function DocumentUploadForm() {
                  <CardDescription>AI 从您的文档中提取了 {extractedCards.length} 张卡片。请检查并确认后保存。</CardDescription>
             </CardHeader>
             <CardContent>
-                 <Accordion type="multiple" className="w-full space-y-4">
+                 <Accordion type="multiple" className="w-full space-y-4" defaultValue={Object.keys(groupedCards)}>
                     {Object.entries(groupedCards).map(([chapter, cards]) => (
                         <AccordionItem value={chapter} key={chapter} className="border-none">
                             <Card className="bg-muted/50">
@@ -205,4 +214,3 @@ export function DocumentUploadForm() {
     </div>
   );
 }
-`
