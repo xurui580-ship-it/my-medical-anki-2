@@ -11,6 +11,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import {googleAI} from '@genkit-ai/googleai';
 
 const ExtractQaFromDocumentInputSchema = z.object({
   documentDataUri: z
@@ -144,7 +145,13 @@ const extractQaFromDocumentFlow = ai.defineFlow(
     outputSchema: ExtractQaFromDocumentOutputSchema,
   },
   async input => {
-    const {output} = await prompt(input);
+    const {output} = await ai.generate({
+      model: googleAI('gemini-1.5-pro-latest'),
+      prompt: (await prompt.render(input)).prompt,
+      output: {
+        schema: ExtractQaFromDocumentOutputSchema,
+      },
+    });
     return output!;
   }
 );
