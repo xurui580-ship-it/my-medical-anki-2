@@ -144,7 +144,7 @@ const extractQaFromDocumentFlow = ai.defineFlow(
     inputSchema: ExtractQaFromDocumentInputSchema,
     outputSchema: ExtractQaFromDocumentOutputSchema,
   },
-  async input => {
+  async (input) => {
     const {output} = await prompt.generate({
       model: googleAI('gemini-1.5-pro-latest'),
       input: input,
