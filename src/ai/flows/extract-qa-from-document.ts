@@ -11,7 +11,6 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-import {googleAI} from '@genkit-ai/googleai';
 
 const ExtractQaFromDocumentInputSchema = z.object({
   documentDataUri: z
@@ -117,7 +116,27 @@ const PROMPT_TEMPLATE = `
   }
 ]
 \`\`\`
+
+{{#if focus}}
+# 用户指定的重点
+用户希望你重点关注以下内容，并适当增加相关内容的题目比例与细致程度：{{focus}}
+{{/if}}
+
+Here is the document:
 `;
+
+
+const extractQaFromDocumentPrompt = ai.definePrompt({
+    name: 'extractQaFromDocumentPrompt',
+    input: { schema: ExtractQaFromDocumentInputSchema },
+    output: { schema: ExtractQaFromDocumentOutputSchema, format: "json" },
+    prompt: PROMPT_TEMPLATE,
+    model: 'googleai/gemini-1.5-pro-latest',
+    config: {
+        temperature: 0.2
+    }
+});
+
 
 export const extractQaFromDocumentFlow = ai.defineFlow(
   {
@@ -126,23 +145,13 @@ export const extractQaFromDocumentFlow = ai.defineFlow(
     outputSchema: ExtractQaFromDocumentOutputSchema,
   },
   async (input) => {
-    let finalPrompt = PROMPT_TEMPLATE;
-    if (input.focus) {
-        finalPrompt += `
-# 用户指定的重点
-用户希望你重点关注以下内容，并适当增加相关内容的题目比例与细致程度：${input.focus}
-`;
-    }
     
-    finalPrompt += `\nHere is the document:`;
-
-    const { output } = await ai.generate({
-        model: googleAI('gemini-1.5-pro-latest'),
-        output: { schema: ExtractQaFromDocumentOutputSchema, format: 'json' },
-        prompt: [
-            { text: finalPrompt },
-            { media: { url: input.documentDataUri } }
-        ],
+    const { output } = await extractQaFromDocumentPrompt([
+        { media: { url: input.documentDataUri } }
+    ], {
+        custom: {
+            focus: input.focus
+        }
     });
 
     return output || [];
