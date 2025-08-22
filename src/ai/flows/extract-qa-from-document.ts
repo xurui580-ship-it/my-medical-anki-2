@@ -145,9 +145,17 @@ const extractQaFromDocumentFlow = ai.defineFlow(
     outputSchema: ExtractQaFromDocumentOutputSchema,
   },
   async (input) => {
-    const {output} = await prompt.generate({
+     const {output} = await ai.generate({
       model: googleAI('gemini-1.5-pro-latest'),
-      input: input,
+      prompt: {
+        text: prompt.prompt!,
+        input: input,
+        output: {
+          format: 'json',
+          schema: ExtractQaFromDocumentOutputSchema,
+        },
+      },
+      // You can add more config here if needed
     });
     return output!;
   }

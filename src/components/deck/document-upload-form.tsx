@@ -1,14 +1,14 @@
 
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { extractQaFromDocument, ExtractQaFromDocumentOutput } from "@/ai/flows/extract-qa-from-document";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Loader2, UploadCloud, CheckCircle, AlertTriangle, Wand2, Save, Badge, Folder, FileText } from "lucide-react";
+import { Loader2, UploadCloud, CheckCircle, AlertTriangle, Wand2, Save, Badge, Folder, FileText, FileUp, Replace } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -21,13 +21,14 @@ type FormValues = {
 type FormState = "idle" | "uploading" | "processing" | "reviewing" | "error";
 
 export function DocumentUploadForm() {
-  const { register, handleSubmit, watch } = useForm<FormValues>();
+  const { register, handleSubmit, watch, resetField } = useForm<FormValues>();
   const [formState, setFormState] = useState<FormState>("idle");
   const [extractedCards, setExtractedCards] = useState<ExtractQaFromDocumentOutput>([]);
   const [errorMessage, setErrorMessage] = useState("");
   const { toast } = useToast();
   const router = useRouter();
   const documentFile = watch("document");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const groupedCards = useMemo(() => {
     if (formState !== 'reviewing') return {};
@@ -96,7 +97,14 @@ export function DocumentUploadForm() {
     <div className="text-center">
         <UploadCloud className="w-12 h-12 mx-auto text-muted-foreground" />
         <p className="mt-2 text-sm text-muted-foreground">拖放文件到这里，或点击选择文件</p>
-        <Input id="document-upload" type="file" className="sr-only" {...register("document")} accept=".pdf,.doc,.docx,.txt" />
+        <Input 
+          id="document-upload" 
+          type="file" 
+          className="sr-only" 
+          {...register("document")} 
+          accept=".pdf,.doc,.docx,.txt"
+          ref={fileInputRef} 
+        />
     </div>
   );
 
@@ -111,13 +119,27 @@ export function DocumentUploadForm() {
         <form onSubmit={handleSubmit(onSubmit)}>
             <Card className="glass-card">
                 <CardContent className="p-6">
-                <label htmlFor={formState === 'idle' ? 'document-upload' : undefined} className={formState === 'idle' ? 'cursor-pointer' : ''}>
+                <label htmlFor={formState === 'idle' && (!documentFile || documentFile.length === 0) ? 'document-upload' : undefined} className={formState === 'idle' ? 'cursor-pointer' : ''}>
                     <div className="flex flex-col items-center justify-center text-center p-10 border-2 border-dashed rounded-lg hover:border-primary transition-colors">
                     {formState !== 'idle' ? stateContent[formState] : 
                         (documentFile && documentFile.length > 0) ? 
-                        <div className="flex items-center gap-2 text-primary">
-                            <FileText />
-                            <span className="text-sm font-medium">{documentFile[0].name}</span>
+                        <div className="text-center">
+                           <div className="flex items-center gap-2 text-primary">
+                                <FileText />
+                                <span className="text-sm font-medium">{documentFile[0].name}</span>
+                           </div>
+                            <Button 
+                                type="button"
+                                variant="outline" 
+                                size="sm" 
+                                className="mt-4"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  fileInputRef.current?.click();
+                                }}
+                            >
+                                <Replace className="mr-2 h-4 w-4" /> 更换文件
+                            </Button>
                         </div>
                         : idleContent
                     }
@@ -205,7 +227,10 @@ export function DocumentUploadForm() {
              <Button variant="outline" onClick={() => {
                 setFormState('idle');
                 setExtractedCards([]);
-             }}>重新上传</Button>
+                resetField("document");
+             }}>
+                <FileUp className="mr-2 h-4 w-4" /> 重新上传
+            </Button>
             <Button variant="warm" onClick={handleSaveDeck}>
                 <Save className="mr-2 h-4 w-4" />
                 确认并保存卡组
