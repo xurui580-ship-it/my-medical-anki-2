@@ -23,10 +23,7 @@ export function NewCardLimitDialog({ open, onOpenChange, onContinue, onReview, o
         <AlertDialog open={open} onOpenChange={onOpenChange}>
             <AlertDialogContent>
                 <AlertDialogHeader>
-                    <AlertDialogTitle>已达到今日新学上限！</AlertDialogTitle>
-                    <AlertDialogDescription>
-                        你今天已经学习了20张新卡片。请选择接下来的操作：
-                    </AlertDialogDescription>
+                    <AlertDialogTitle>请选择接下来的操作：</AlertDialogTitle>
                 </AlertDialogHeader>
                 <AlertDialogFooter className="flex-col sm:flex-col sm:space-x-0 gap-2">
                     <Button onClick={onContinue} variant="success">继续学习新卡</Button>
