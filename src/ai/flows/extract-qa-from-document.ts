@@ -1,28 +1,28 @@
-
 'use server';
 
 /**
- * @fileOverview Extracts questions and answers from a document using an LLM to create a flashcard deck.
+ * @fileOverview Extracts questions and answers from a document by calling a custom LLM API endpoint.
  *
- * - extractQaFromDocument - A function that extracts Q&A pairs from a document.
+ * - extractQaFromDocument - A function that calls an external API to extract Q&A pairs.
  * - ExtractQaFromDocumentInput - The input type for the extractQaFromDocument function.
  * - ExtractQaFromDocumentOutput - The return type for the extractQaFromDocument function.
  */
 
-import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
-import {googleAI} from '@genkit-ai/googleai';
+import { z } from 'zod';
 
+// Define the input schema for the function
 const ExtractQaFromDocumentInputSchema = z.object({
   documentDataUri: z
     .string()
     .describe(
       "A document (PDF, Word, or TXT) as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
     ),
-  focus: z.string().optional().describe("Keywords or topics to focus on."),
+  focus: z.string().optional().describe('Keywords or topics to focus on.'),
 });
 export type ExtractQaFromDocumentInput = z.infer<typeof ExtractQaFromDocumentInputSchema>;
 
+
+// Define the expected output structure from the API
 const ClozeCardSchema = z.object({
     type: z.literal("cloze"),
     chapter: z.string().optional().describe("如果识别到，则为卡片内容所属的章节标题。"),
@@ -41,10 +41,26 @@ const QaCardSchema = z.object({
 });
 
 const ExtractQaFromDocumentOutputSchema = z.array(z.union([ClozeCardSchema, QaCardSchema]));
-
 export type ExtractQaFromDocumentOutput = z.infer<typeof ExtractQaFromDocumentOutputSchema>;
 
-const PROMPT_TEMPLATE = `
+
+// The main function that calls the external API
+export async function extractQaFromDocument(
+  input: ExtractQaFromDocumentInput
+): Promise<ExtractQaFromDocumentOutput> {
+
+  // IMPORTANT: You need to replace this with your actual API endpoint.
+  const API_ENDPOINT = 'https://your-llm-provider.com/api/extract-qa';
+  
+  // IMPORTANT: You need to set this environment variable in the .env file.
+  const API_KEY = process.env.CUSTOM_LLM_API_KEY;
+
+  if (!API_KEY) {
+    throw new Error('CUSTOM_LLM_API_KEY is not set in the environment variables.');
+  }
+
+  // The prompt is now static and will be sent to the custom API
+  const PROMPT_TEMPLATE = `
 # 角色与任务
 你是一位拥有医学背景的“医学教育”专家，擅长从医学教材、研究文献或临床指南中提取核心知识，并制作出用于高效记忆和理解的Anki卡片。你的唯一任务是根据用户提供的医学文档内容，生成一系列高质量、高精度的Anki记忆卡片。
 
@@ -106,7 +122,7 @@ const PROMPT_TEMPLATE = `
     "chapter": "第二章：影像学诊断",
     "front": "关于图片的清晰问题",
     "back": "准确、简洁、结构化的答案",
-    "tags": ["标签1, "标签2", ...],
+    "tags": ["标签1", "标签2", ...],
     "media": "data:image/jpeg;base64,..."
   },
   {
@@ -117,49 +133,43 @@ const PROMPT_TEMPLATE = `
   }
 ]
 \`\`\`
-
-{{#if focus}}
-# 用户指定的重点
-用户希望你重点关注以下内容，并适当增加相关内容的题目比例与细致程度：{{focus}}
-{{/if}}
-
-Here is the document:
 `;
 
-
-const extractQaFromDocumentPrompt = ai.definePrompt({
-    name: 'extractQaFromDocumentPrompt',
-    input: { schema: z.any() },
-    output: { schema: ExtractQaFromDocumentOutputSchema, format: "json" },
-    prompt: PROMPT_TEMPLATE,
-    model: googleAI('gemini-1.5-pro-latest'),
-    config: {
-        temperature: 0.2
-    }
-});
-
-
-export const extractQaFromDocumentFlow = ai.defineFlow(
-  {
-    name: 'extractQaFromDocumentFlow',
-    inputSchema: ExtractQaFromDocumentInputSchema,
-    outputSchema: ExtractQaFromDocumentOutputSchema,
-  },
-  async (input) => {
-    
-    const { output } = await extractQaFromDocumentPrompt([
-        { media: { url: input.documentDataUri } }
-    ], {
-        custom: {
-            focus: input.focus
-        }
+  try {
+    const response = await fetch(API_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${API_KEY}`,
+      },
+      body: JSON.stringify({
+        prompt: PROMPT_TEMPLATE,
+        document: input.documentDataUri, // Sending the full Data URI
+        focus: input.focus,
+        output_format: "json_array" // Telling the API we expect a JSON array
+      }),
     });
 
-    return output || [];
+    if (!response.ok) {
+      const errorBody = await response.text();
+      console.error('API Error Response:', errorBody);
+      throw new Error(`API request failed with status ${response.status}: ${response.statusText}`);
+    }
+
+    const result = await response.json();
+    
+    // Validate the response from the API against our schema
+    const validatedResult = ExtractQaFromDocumentOutputSchema.safeParse(result);
+    if (!validatedResult.success) {
+        console.error("API response validation error:", validatedResult.error);
+        throw new Error("Received invalid data structure from the API.");
+    }
+
+    return validatedResult.data;
+
+  } catch (error) {
+    console.error('Failed to call custom LLM API:', error);
+    // Re-throw the error so the frontend can catch it
+    throw error;
   }
-);
-
-
-export async function extractQaFromDocument(input: ExtractQaFromDocumentInput): Promise<ExtractQaFromDocumentOutput> {
-    return extractQaFromDocumentFlow(input);
 }
