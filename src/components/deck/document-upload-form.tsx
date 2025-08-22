@@ -119,7 +119,7 @@ export function DocumentUploadForm() {
         <form onSubmit={handleSubmit(onSubmit)}>
             <Card className="glass-card">
                 <CardContent className="p-6">
-                <label htmlFor={formState === 'idle' && (!documentFile || documentFile.length === 0) ? 'document-upload' : undefined} className={formState === 'idle' ? 'cursor-pointer' : ''}>
+                <label htmlFor="document-upload" className={formState === 'idle' ? 'cursor-pointer' : ''}>
                     <div className="flex flex-col items-center justify-center text-center p-10 border-2 border-dashed rounded-lg hover:border-primary transition-colors">
                     {formState !== 'idle' ? stateContent[formState] : 
                         (documentFile && documentFile.length > 0) ? 
