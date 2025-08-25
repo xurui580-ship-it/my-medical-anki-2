@@ -68,7 +68,8 @@ export function DocumentUploadForm() {
             }
         } catch(e) {
             console.error(e);
-            setErrorMessage("AI在处理时发生错误，可能是文档内容过于复杂或格式不受支持。");
+            const error = e as Error;
+            setErrorMessage(error.message || "AI在处理时发生错误，可能是文档内容过于复杂或格式不受支持。");
             setFormState("error");
         }
       };
