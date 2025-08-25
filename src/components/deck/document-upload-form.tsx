@@ -16,24 +16,21 @@ import { useDecks } from "@/contexts/DeckContext";
 import type { Card as CardType, Deck } from "@/lib/types";
 
 type FormValues = {
-    document: FileList;
     focus: string;
 }
 
 type FormState = "idle" | "uploading" | "processing" | "reviewing" | "error";
 
 export function DocumentUploadForm() {
-  const { register, handleSubmit, watch, resetField } = useForm<FormValues>();
+  const { register, handleSubmit, reset } = useForm<FormValues>();
   const [formState, setFormState] = useState<FormState>("idle");
+  const [documentFile, setDocumentFile] = useState<File | null>(null);
   const [extractedCards, setExtractedCards] = useState<ExtractQaFromDocumentOutput>([]);
   const [errorMessage, setErrorMessage] = useState("");
   const { toast } = useToast();
   const router = useRouter();
   const { addDeck } = useDecks();
-  const documentFile = watch("document");
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-
-  const { ref: documentFormRef, ...documentFormRest } = register("document");
 
   const groupedCards = useMemo(() => {
     if (formState !== 'reviewing') return {};
@@ -50,8 +47,7 @@ export function DocumentUploadForm() {
 
 
   const onSubmit = async (data: FormValues) => {
-    const file = data.document[0];
-    if (!file) return;
+    if (!documentFile) return;
 
     setFormState("uploading");
     setErrorMessage("");
@@ -80,7 +76,7 @@ export function DocumentUploadForm() {
         setErrorMessage("读取文件时发生错误。");
         setFormState("error");
       };
-      reader.readAsDataURL(file);
+      reader.readAsDataURL(documentFile);
     } catch (error) {
       console.error(error);
       setErrorMessage("处理文档时发生未知错误。");
@@ -89,7 +85,7 @@ export function DocumentUploadForm() {
   };
 
   const handleSaveDeck = () => {
-    if (!documentFile || documentFile.length === 0 || extractedCards.length === 0) {
+    if (!documentFile || extractedCards.length === 0) {
         toast({
             title: "无法保存",
             description: "没有可保存的卡片。",
@@ -98,7 +94,7 @@ export function DocumentUploadForm() {
         return;
     }
 
-    const deckName = documentFile[0].name.replace(/\.[^/.]+$/, "");
+    const deckName = documentFile.name.replace(/\.[^/.]+$/, "");
 
     const newDeck: Deck = {
         id: `doc-${Date.now()}`,
@@ -109,8 +105,8 @@ export function DocumentUploadForm() {
         reviewModeToday: false,
         cards: extractedCards.map((card, index) => ({
             id: `doc-card-${Date.now()}-${index}`,
-            q: card.type === 'qa' ? card.front : card.content, // Simplified for now
-            a: card.type === 'qa' ? card.back : card.content.replace(/{{c1::(.*?)}}/g, '$1'), // Simplified for now
+            q: card.type === 'qa' ? card.front : card.content,
+            a: card.type === 'qa' ? card.back : card.content.replace(/{{c1::(.*?)}}/g, '$1'),
             chapter: card.chapter,
             media: card.media,
             isNew: true,
@@ -132,9 +128,24 @@ export function DocumentUploadForm() {
   };
 
 
-  const handleReplaceFileClick = () => {
-    fileInputRef.current?.click();
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+        setDocumentFile(e.target.files[0]);
+    }
   }
+  
+  const triggerFileSelect = () => {
+      fileInputRef.current?.click();
+  }
+
+  const resetState = () => {
+    setFormState('idle');
+    setDocumentFile(null);
+    setExtractedCards([]);
+    setErrorMessage("");
+    reset(); // Resets the 'focus' field
+  }
+
 
   const idleContent = (
     <div className="text-center">
@@ -146,7 +157,7 @@ export function DocumentUploadForm() {
   const stateContent = {
     uploading: <><Loader2 className="w-12 h-12 mx-auto animate-spin" /><p className="mt-2">正在上传...</p></>,
     processing: <><Wand2 className="w-12 h-12 mx-auto animate-pulse text-primary" /><p className="mt-2">AI 正在努力提取中...</p></>,
-    error: <><AlertTriangle className="w-12 h-12 mx-auto text-destructive" /><p className="mt-2 text-destructive">{errorMessage}</p><Button onClick={() => { setFormState('idle'); resetField('document');}} className="mt-4">重试</Button></>,
+    error: <><AlertTriangle className="w-12 h-12 mx-auto text-destructive" /><p className="mt-2 text-destructive">{errorMessage}</p><Button onClick={resetState} className="mt-4">重试</Button></>,
   };
 
   if (formState !== "reviewing") {
@@ -154,14 +165,14 @@ export function DocumentUploadForm() {
         <form onSubmit={handleSubmit(onSubmit)}>
             <Card className="glass-card">
                 <CardContent className="p-6">
-                <label htmlFor="document-upload" className={formState === 'idle' ? 'cursor-pointer' : ''}>
+                <div onClick={formState === 'idle' ? triggerFileSelect : undefined} className={formState === 'idle' ? 'cursor-pointer' : ''}>
                     <div className="flex flex-col items-center justify-center text-center p-10 border-2 border-dashed rounded-lg hover:border-primary transition-colors">
                     {formState !== 'idle' ? stateContent[formState] : 
-                        (documentFile && documentFile.length > 0) ? 
+                        documentFile ? 
                         <div className="text-center">
                            <div className="flex items-center gap-2 text-primary">
                                 <FileText />
-                                <span className="text-sm font-medium">{documentFile[0].name}</span>
+                                <span className="text-sm font-medium">{documentFile.name}</span>
                            </div>
                             <Button 
                                 type="button"
@@ -169,8 +180,8 @@ export function DocumentUploadForm() {
                                 size="sm" 
                                 className="mt-4"
                                 onClick={(e) => {
-                                  e.preventDefault();
-                                  handleReplaceFileClick();
+                                  e.stopPropagation(); // Prevent outer div's onClick
+                                  triggerFileSelect();
                                 }}
                             >
                                 <Replace className="mr-2 h-4 w-4" /> 更换文件
@@ -179,17 +190,15 @@ export function DocumentUploadForm() {
                         : idleContent
                     }
                     </div>
-                </label>
+                </div>
                 <Input 
                     id="document-upload" 
                     type="file" 
                     className="sr-only" 
                     accept=".pdf,.doc,.docx,.txt"
-                    {...documentFormRest}
-                    ref={(e) => {
-                        documentFormRef(e);
-                        fileInputRef.current = e;
-                    }}
+                    ref={fileInputRef}
+                    onChange={handleFileChange}
+                    disabled={formState !== 'idle'}
                 />
                  <div className="mt-6">
                     <Label htmlFor="focus-input" className="mb-2 block">重点提示 (选填)</Label>
@@ -203,7 +212,7 @@ export function DocumentUploadForm() {
                         给AI一些提示，告诉它哪些是重点，以便更精确地生成卡片。
                     </p>
                  </div>
-                 <Button type="submit" className="w-full mt-6" disabled={formState !== 'idle' || !documentFile || documentFile.length === 0} variant="warm">
+                 <Button type="submit" className="w-full mt-6" disabled={formState !== 'idle' || !documentFile} variant="warm">
                     {formState === 'idle' ? <><Wand2 className="mr-2"/>开始提取</> : '...'}
                  </Button>
                 </CardContent>
@@ -270,11 +279,7 @@ export function DocumentUploadForm() {
             </CardContent>
         </Card>
         <div className="flex justify-end gap-4">
-             <Button variant="outline" onClick={() => {
-                setFormState('idle');
-                setExtractedCards([]);
-                resetField("document");
-             }}>
+             <Button variant="outline" onClick={resetState}>
                 <FileUp className="mr-2 h-4 w-4" /> 重新上传
             </Button>
             <Button variant="warm" onClick={handleSaveDeck}>
@@ -285,5 +290,3 @@ export function DocumentUploadForm() {
     </div>
   );
 }
-
-    
