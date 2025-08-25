@@ -5,7 +5,8 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { z, defineFlow } from 'genkit';
+import { z } from 'genkit';
+import { defineFlow } from 'genkit/flow';
 
 // Define the input schema for the function
 export const ExtractQaFromDocumentInputSchema = z.object({

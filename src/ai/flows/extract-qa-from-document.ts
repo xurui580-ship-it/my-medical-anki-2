@@ -21,5 +21,5 @@ export async function extractQaFromDocument(
   input: ExtractQaFromDocumentInput
 ): Promise<ExtractQaFromDocumentOutput> {
   // The Genkit Next.js plugin will handle routing this call correctly.
-  return await extractQaFlow(input);
+  return await runFlow(extractQaFlow, input);
 }
