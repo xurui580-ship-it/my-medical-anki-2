@@ -4,7 +4,7 @@
 import { useState, useMemo, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { extractQaFromDocument } from "@/ai/actions";
-import type { ExtractQaFromDocumentOutput } from "@/ai/actions";
+import type { ExtractQaFromDocumentOutput } from "@/lib/schemas";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
