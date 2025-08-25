@@ -2,14 +2,15 @@
 'use server';
 
 /**
- * @fileOverview Extracts questions and answers from a document by calling a custom LLM API endpoint.
+ * @fileOverview Extracts questions and answers from a document using Genkit and the Gemini model.
  *
- * - extractQaFromDocument - A function that calls an external API to extract Q&A pairs.
+ * - extractQaFromDocument - A function that uses a Genkit prompt to extract Q&A pairs from a document.
  * - ExtractQaFromDocumentInput - The input type for the extractQaFromDocument function.
  * - ExtractQaFromDocumentOutput - The return type for the extractQaFromDocument function.
  */
 
-import { z } from 'zod';
+import {ai} from '@/ai/genkit';
+import {z} from 'genkit';
 
 // Define the input schema for the function
 const ExtractQaFromDocumentInputSchema = z.object({
@@ -23,7 +24,7 @@ const ExtractQaFromDocumentInputSchema = z.object({
 export type ExtractQaFromDocumentInput = z.infer<typeof ExtractQaFromDocumentInputSchema>;
 
 
-// Define the expected output structure from the API
+// Define the expected output structure from the AI model
 const ClozeCardSchema = z.object({
     type: z.literal("cloze"),
     chapter: z.string().optional().describe("如果识别到，则为卡片内容所属的章节标题。"),
@@ -45,25 +46,18 @@ const ExtractQaFromDocumentOutputSchema = z.array(z.union([ClozeCardSchema, QaCa
 export type ExtractQaFromDocumentOutput = z.infer<typeof ExtractQaFromDocumentOutputSchema>;
 
 
-// The main function that calls the external API
-export async function extractQaFromDocument(
-  input: ExtractQaFromDocumentInput
-): Promise<ExtractQaFromDocumentOutput> {
-
-  const API_ENDPOINT = 'https://openrouter.ai/api/v1/chat/completions';
-  const API_KEY = process.env.CUSTOM_LLM_API_KEY;
-
-  if (!API_KEY) {
-    throw new Error('CUSTOM_LLM_API_KEY is not set in the environment variables.');
-  }
-
-  // System prompt that defines the role and task for the AI
-  const SYSTEM_PROMPT = `
+const qaPrompt = ai.definePrompt({
+    name: 'qaExtractionPrompt',
+    input: { schema: ExtractQaFromDocumentInputSchema },
+    output: { schema: ExtractQaFromDocumentOutputSchema },
+    prompt: `
 # 角色与任务
 你是一位拥有医学背景的“医学教育”专家，擅长从医学教材、研究文献或临床指南中提取核心知识，并制作出用于高效记忆和理解的Anki卡片。你的唯一任务是根据用户提供的医学文档内容，生成一系列高质量、高精度的Anki记忆卡片。
 
 # 核心原则
 - **绝对精确与基于证据**：所有卡片内容必须严格基于提供的医学文献，不得有任何编造、推测或与原文相悖的信息。术语、数值、流程必须100%准确。
+- **强调关联与机制**：优先选择文档中描述**机制、通路、病理生理、药理作用、鉴别诊断、临床意义**的内容进行提问，而非孤立的事实。
+- **促进临床思维**：问题应模拟临床推理，促进对知识的深度理解和应用，而不仅仅是死记硬- **绝对精确与基于证据**：所有卡片内容必须严格基于提供的医学文献，不得有任何编造、推测或与原文相悖的信息。术语、数值、流程必须100%准确。
 - **强调关联与机制**：优先选择文档中描述**机制、通路、病理生理、药理作用、鉴别诊断、临床意义**的内容进行提问，而非孤立的事实。
 - **促进临床思维**：问题应模拟临床推理，促进对知识的深度理解和应用，而不仅仅是死记硬背。
 
@@ -84,89 +78,36 @@ export async function extractQaFromDocument(
 - **问题 (Front)**：应侧重于医学思维，如机制、鉴别诊断、临床表现、治疗原则、药物作用等。
 - **答案 (Back)**：应精准、简洁、结构化。
 
-# 输出格式
-你必须**严格**按照以下JSON数组格式输出，**只输出纯粹的JSON数组，不包含任何解释、前言或markdown代码块标记**。
+# 用户指定的重点
+{{#if focus}}
+请在生成卡片时，特别关注以下由用户指定的重点：{{focus}}
+{{/if}}
 
-\`\`\`json
-[
-  {
-    "type": "cloze",
-    "chapter": "第一章：心脏生理学",
-    "content": "完整的医学陈述句，其中{{c1::关键信息}}被隐藏。",
-    "tags": ["标签1", "标签2"]
-  },
-  {
-    "type": "qa",
-    "chapter": "第二章：影像学诊断",
-    "front": "关于图片的清晰问题",
-    "back": "准确、简洁、结构化的答案",
-    "tags": ["标签1", "标签2"]
-  }
-]
-\`\`\`
-`;
+# 文档内容
+这是用户提供的文档，请基于此内容生成卡片：
+{{media url=documentDataUri}}
+`,
+});
 
-  // Prepare the content for the user message
-  let user_prompt = `这是我上传的文档内容（以Data URI格式），请根据它生成卡片。文档数据如下：\n${input.documentDataUri}`;
-  if(input.focus) {
-    user_prompt += `\n\n请特别关注以下重点：${input.focus}`;
-  }
-
-
+// The main function that calls the Genkit prompt
+export async function extractQaFromDocument(
+  input: ExtractQaFromDocumentInput
+): Promise<ExtractQaFromDocumentOutput> {
   try {
-    const response = await fetch(API_ENDPOINT, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${API_KEY}`,
-        'Content-Type': 'application/json',
-        'X-Title': 'MediFlash', // Optional: For OpenRouter ranking
-      },
-      body: JSON.stringify({
-        model: "deepseek/deepseek-chat", // DeepSeek V3 Chat Model
-        messages: [
-            { "role": "system", "content": SYSTEM_PROMPT },
-            { "role": "user", "content": user_prompt }
-        ],
-        // The API returns a JSON object that contains a string. We need to parse that string.
-        // So we can't use response_format here directly.
-        // response_format: { "type": "json_object" }
-      }),
-    });
+    console.log("Calling Genkit prompt with input:", { focus: input.focus, uriLength: input.documentDataUri.length });
+    const { output } = await qaPrompt(input);
 
-    if (!response.ok) {
-      const errorBody = await response.text();
-      console.error('API Error Response:', errorBody);
-      throw new Error(`API request failed with status ${response.status}: ${response.statusText}`);
+    if (!output) {
+        console.error("Genkit prompt returned no output.");
+        throw new Error("AI模型未能生成任何卡片。");
     }
-
-    const result = await response.json();
-
-    // Extract the string content from the response
-    const messageContent = result.choices[0]?.message?.content;
-    if (!messageContent) {
-        throw new Error("API response did not contain valid content.");
-    }
-
-    // Parse the string content as JSON. It might contain ```json ... ``` markers.
-    const jsonRegex = /```json\n([\s\S]*?)\n```/;
-    const match = messageContent.match(jsonRegex);
-    const jsonString = match ? match[1] : messageContent;
-
-    const parsedJson = JSON.parse(jsonString);
-
-    // Validate the parsed JSON against our schema
-    const validatedResult = ExtractQaFromDocumentOutputSchema.safeParse(parsedJson);
-
-    if (!validatedResult.success) {
-        console.error("API response validation error:", validatedResult.error.flatten());
-        throw new Error("Received invalid data structure from the API.");
-    }
-
-    return validatedResult.data;
+    
+    console.log(`Successfully extracted ${output.length} cards.`);
+    return output;
 
   } catch (error) {
-    console.error('Failed to call custom LLM API:', error);
-    // Re-throw the error so the frontend can catch it
-    throw error;
+    console.error('Failed to process document with Genkit:', error);
+    // Re-throw the error so the frontend can catch it and display a message
+    throw new Error("AI在处理文档时发生错误，请检查文档内容或稍后再试。");
   }
 }
