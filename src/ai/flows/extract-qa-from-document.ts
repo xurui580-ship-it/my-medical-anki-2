@@ -2,15 +2,14 @@
 
 /**
  * @fileOverview Client-side function to trigger the AI-powered Q&A extraction flow.
- * This file is imported by React components and uses `runFlow` to securely
- * call the backend Genkit flow.
+ * This file is imported by React components and directly calls the Genkit flow,
+ * which is enabled by the `@genkit-ai/next` plugin.
  */
-import { runFlow } from '@genkit-ai/next';
-import type {
-  ExtractQaFromDocumentInput,
-  ExtractQaFromDocumentOutput,
+import {
+  extractQaFlow,
+  type ExtractQaFromDocumentInput,
+  type ExtractQaFromDocumentOutput,
 } from '@/ai/flows';
-import { extractQaFlow } from '@/ai/flows';
 
 /**
  * The main client-callable function that triggers the Genkit flow.
@@ -23,9 +22,9 @@ export async function extractQaFromDocument(
   try {
     console.log("Running Genkit flow with input:", { focus: input.focus, uriLength: input.documentDataUri.length });
     
-    // Use runFlow to securely call the defined flow from the client.
-    // The first argument `extractQaFlow` is a reference to the flow defined in `src/ai/flows.ts`.
-    const output = await runFlow(extractQaFlow, input);
+    // With the @genkit-ai/next plugin, we can directly call the flow
+    // from server components or other server-side code.
+    const output = await extractQaFlow(input);
     
     if (!output) {
       console.error("Genkit flow returned no output.");
