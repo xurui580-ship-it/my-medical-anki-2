@@ -14,8 +14,6 @@ export type {
   ExtractQaFromDocumentInput,
   ExtractQaFromDocumentOutput,
 };
-export { ExtractQaFromDocumentInputSchema } from '@/ai/flows';
-
 
 /**
  * A server action that can be called from client components to run the

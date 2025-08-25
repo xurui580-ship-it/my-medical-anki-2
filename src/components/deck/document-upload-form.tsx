@@ -3,7 +3,8 @@
 
 import { useState, useMemo, useRef } from "react";
 import { useForm } from "react-hook-form";
-import { extractQaFromDocument, ExtractQaFromDocumentOutput, ExtractQaFromDocumentInputSchema } from "@/ai/flows/extract-qa-from-document";
+import { extractQaFromDocument, type ExtractQaFromDocumentOutput } from "@/ai/flows/extract-qa-from-document";
+import { ExtractQaFromDocumentInputSchema } from "@/ai/flows";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
