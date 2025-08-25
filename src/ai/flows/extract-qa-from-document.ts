@@ -5,7 +5,7 @@
  * call the backend Genkit flow.
  */
 
-import { runFlow } from 'genkit/next';
+import { runFlow } from '@genkit-ai/next/server';
 import type {
   ExtractQaFromDocumentInput,
   ExtractQaFromDocumentOutput,
