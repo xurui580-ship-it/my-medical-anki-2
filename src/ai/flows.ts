@@ -3,7 +3,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import { defineFlow, runFlow } from '@genkit-ai/next/server';
+import { defineFlow } from 'genkit/flow';
 
 // Define the input schema for the function
 const ExtractQaFromDocumentInputSchema = z.object({

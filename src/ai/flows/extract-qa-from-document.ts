@@ -5,7 +5,7 @@
  * This file is imported by React components and uses `runFlow` to securely
  * call the backend Genkit flow.
  */
-import { runFlow } from '@genkit-ai/next/server';
+import { runFlow } from '@genkit-ai/next';
 import type {
   ExtractQaFromDocumentInput,
   ExtractQaFromDocumentOutput,
