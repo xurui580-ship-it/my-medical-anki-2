@@ -117,7 +117,7 @@ export async function extractQaFromDocument(
     const response = await fetch(API_ENDPOINT, {
       method: 'POST',
       headers: {
-        'Authorization': \`Bearer \${API_KEY}\`,
+        'Authorization': `Bearer ${API_KEY}`,
         'Content-Type': 'application/json',
         'X-Title': 'MediFlash', // Optional: For OpenRouter ranking
       },
@@ -127,14 +127,16 @@ export async function extractQaFromDocument(
             { "role": "system", "content": SYSTEM_PROMPT },
             { "role": "user", "content": user_content }
         ],
-        response_format: { "type": "json_object" } // Request JSON output
+        // The API returns a JSON object that contains a string. We need to parse that string.
+        // So we can't use response_format here directly.
+        // response_format: { "type": "json_object" } 
       }),
     });
 
     if (!response.ok) {
       const errorBody = await response.text();
       console.error('API Error Response:', errorBody);
-      throw new Error(\`API request failed with status \${response.status}: \${response.statusText}\`);
+      throw new Error(`API request failed with status ${response.status}: ${response.statusText}`);
     }
 
     const result = await response.json();
@@ -145,8 +147,12 @@ export async function extractQaFromDocument(
         throw new Error("API response did not contain valid content.");
     }
     
-    // Parse the string content as JSON
-    const parsedJson = JSON.parse(messageContent);
+    // Parse the string content as JSON. It might contain ```json ... ``` markers.
+    const jsonRegex = /```json\n([\s\S]*?)\n```/;
+    const match = messageContent.match(jsonRegex);
+    const jsonString = match ? match[1] : messageContent;
+    
+    const parsedJson = JSON.parse(jsonString);
 
     // Validate the parsed JSON against our schema
     const validatedResult = ExtractQaFromDocumentOutputSchema.safeParse(parsedJson);
