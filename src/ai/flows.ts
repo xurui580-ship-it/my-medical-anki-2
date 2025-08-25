@@ -2,15 +2,16 @@
 'use server';
 /**
  * @fileOverview Defines the Genkit flow for extracting Q&A pairs from a document.
- * This file should not be included in the Next.js bundle and is only used by the
- * Genkit runtime.
+ * This file contains all related logic, including schemas, prompts, and the flow itself.
+ * It is intended to be run by the Genkit runtime, not directly imported by Next.js components.
  */
 import { z } from 'zod';
 import { ai } from '@/ai/genkit';
+import { defineFlow, definePrompt } from 'genkit/core';
 
 // --- Schema Definitions ---
 
-const ExtractQaFromDocumentInputSchema = z.object({
+export const ExtractQaFromDocumentInputSchema = z.object({
   documentDataUri: z
     .string()
     .describe(
@@ -19,7 +20,7 @@ const ExtractQaFromDocumentInputSchema = z.object({
   focus: z.string().optional().describe('Keywords or topics to focus on.'),
 });
 
-const ClozeCardSchema = z.object({
+export const ClozeCardSchema = z.object({
     type: z.literal("cloze"),
     chapter: z.string().optional().describe("如果识别到，则为卡片内容所属的章节标题。"),
     content: z.string().describe("The full medical statement with the key information hidden using {{c1::...}}."),
@@ -27,7 +28,7 @@ const ClozeCardSchema = z.object({
     media: z.string().optional().describe("An optional data URI for an image related to the card."),
 });
 
-const QaCardSchema = z.object({
+export const QaCardSchema = z.object({
     type: z.literal("qa"),
     chapter: z.string().optional().describe("如果识别到，则为卡片内容所属的章节标题。"),
     front: z.string().describe("A clear, specific clinical or mechanistic question."),
@@ -36,21 +37,21 @@ const QaCardSchema = z.object({
     media: z.string().optional().describe("An optional data URI for an image related to the card."),
 });
 
-const ExtractQaFromDocumentOutputSchema = z.array(z.union([ClozeCardSchema, QaCardSchema]));
-
+export const ExtractQaFromDocumentOutputSchema = z.array(z.union([ClozeCardSchema, QaCardSchema]));
 
 // --- Type Exports for Client Components ---
-
+// These are exported as types so they can be safely imported into client/server components
+// without pulling in the Genkit runtime-specific code.
 export type ExtractQaFromDocumentInput = z.infer<typeof ExtractQaFromDocumentInputSchema>;
 export type ExtractQaFromDocumentOutput = z.infer<typeof ExtractQaFromDocumentOutputSchema>;
 
 
 // --- Genkit Prompt and Flow Definitions ---
 
-const qaExtractionPrompt = ai.definePrompt({
+const qaExtractionPrompt = definePrompt({
     name: 'qaExtractionPrompt',
-    input: {schema: ExtractQaFromDocumentInputSchema},
-    output: {schema: ExtractQaFromDocumentOutputSchema},
+    inputSchema: ExtractQaFromDocumentInputSchema,
+    outputSchema: ExtractQaFromDocumentOutputSchema,
     prompt: `
 # 角色与任务
 你是一位拥有医学背景的“医学教育”专家，擅长从医学教材、研究文献或临床指南中提取核心知识，并制作出用于高效记忆和理解的Anki卡片。你的唯一任务是根据用户提供的医学文档内容，生成一系列高质量、高精度的Anki记忆卡片。
@@ -88,7 +89,7 @@ const qaExtractionPrompt = ai.definePrompt({
 `,
 });
 
-export const extractQaFlow = ai.defineFlow(
+export const extractQaFlow = defineFlow(
   {
     name: 'extractQaFlow',
     inputSchema: ExtractQaFromDocumentInputSchema,
@@ -97,7 +98,7 @@ export const extractQaFlow = ai.defineFlow(
   async (input) => {
     try {
         console.log("Running Genkit flow with input:", { focus: input.focus, uriLength: input.documentDataUri.length });
-        const { output } = await qaExtractionPrompt(input);
+        const { output } = await qaExtractionPrompt.generate({input});
 
         if (!output) {
           console.error("Genkit flow returned no output.");
@@ -113,16 +114,3 @@ export const extractQaFlow = ai.defineFlow(
     }
   }
 );
-
-
-/**
- * A server action that can be called from client components to run the
- * Q&A extraction flow.
- * @param input The document data and focus.
- * @returns An array of extracted question and answer cards.
- */
-export async function extractQaFromDocument(
-  input: ExtractQaFromDocumentInput
-): Promise<ExtractQaFromDocumentOutput> {
-   return await extractQaFlow(input);
-}
