@@ -105,11 +105,11 @@ export async function extractQaFromDocument(
 ]
 \`\`\`
 `;
-    
+
   // Prepare the content for the user message
-  let prompt_text = `这是我上传的文档内容，请根据它生成卡片。`;
+  let user_prompt = `这是我上传的文档内容（以Data URI格式），请根据它生成卡片。文档数据如下：\n${input.documentDataUri}`;
   if(input.focus) {
-    prompt_text += `\n\n请特别关注以下重点：${input.focus}`;
+    user_prompt += `\n\n请特别关注以下重点：${input.focus}`;
   }
 
 
@@ -122,20 +122,14 @@ export async function extractQaFromDocument(
         'X-Title': 'MediFlash', // Optional: For OpenRouter ranking
       },
       body: JSON.stringify({
-        model: "deepseek/deepseek-chat", // 使用DeepSeek的聊天模型
+        model: "deepseek/deepseek-chat", // DeepSeek V3 Chat Model
         messages: [
             { "role": "system", "content": SYSTEM_PROMPT },
-            { 
-              "role": "user", 
-              "content": [
-                { "type": "text", "text": prompt_text },
-                { "type": "image_url", "image_url": { "url": input.documentDataUri } }
-              ]
-            }
+            { "role": "user", "content": user_prompt }
         ],
         // The API returns a JSON object that contains a string. We need to parse that string.
         // So we can't use response_format here directly.
-        // response_format: { "type": "json_object" } 
+        // response_format: { "type": "json_object" }
       }),
     });
 
@@ -146,18 +140,18 @@ export async function extractQaFromDocument(
     }
 
     const result = await response.json();
-    
+
     // Extract the string content from the response
     const messageContent = result.choices[0]?.message?.content;
     if (!messageContent) {
         throw new Error("API response did not contain valid content.");
     }
-    
+
     // Parse the string content as JSON. It might contain ```json ... ``` markers.
     const jsonRegex = /```json\n([\s\S]*?)\n```/;
     const match = messageContent.match(jsonRegex);
     const jsonString = match ? match[1] : messageContent;
-    
+
     const parsedJson = JSON.parse(jsonString);
 
     // Validate the parsed JSON against our schema
