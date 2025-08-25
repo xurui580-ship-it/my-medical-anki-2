@@ -64,22 +64,17 @@ const extractQaFlow = ai.defineFlow(
     outputSchema: ExtractQaFromDocumentOutputSchema,
   },
   async (input) => {
-    try {
-        console.log("Running Genkit flow with input:", { focus: input.focus, uriLength: input.documentDataUri.length });
-        const { output } = await qaExtractionPrompt(input);
+    const { output } = await qaExtractionPrompt(input);
 
-        if (!output) {
-          console.error("Genkit flow returned no output.");
-          throw new Error("AI模型未能生成任何卡片。");
-        }
-        
-        console.log(`Successfully extracted ${output.length} cards.`);
-        return output;
-    } catch (error) {
-        console.error('Failed to process document with Genkit:', error);
-        // Re-throw the error so the frontend can catch it and display a message.
-        throw new Error("AI在处理文档时发生错误，请检查文档内容或稍后再试。");
+    if (!output) {
+      console.error("Genkit flow returned no output.");
+      // The model might legitimately return no cards if the document is empty or irrelevant.
+      // Returning an empty array is a valid success case.
+      return [];
     }
+    
+    console.log(`Successfully extracted ${output.length} cards.`);
+    return output;
   }
 );
 
