@@ -1,14 +1,13 @@
+'use server';
 /**
  * @fileOverview Defines the Genkit flow for extracting Q&A from a document.
- * This file contains the AI prompt and the flow definition, and is only
- * intended to be loaded by the Genkit runtime.
+ * This file contains the full definition of the AI prompt and flow, and is
+ * intended to be loaded by the Genkit developer server.
  */
-
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import { defineFlow } from 'genkit/flow';
 
-// Define the input schema for the function
+// Input and Output Schemas
 export const ExtractQaFromDocumentInputSchema = z.object({
   documentDataUri: z
     .string()
@@ -19,8 +18,6 @@ export const ExtractQaFromDocumentInputSchema = z.object({
 });
 export type ExtractQaFromDocumentInput = z.infer<typeof ExtractQaFromDocumentInputSchema>;
 
-
-// Define the expected output structure from the AI model
 const ClozeCardSchema = z.object({
     type: z.literal("cloze"),
     chapter: z.string().optional().describe("如果识别到，则为卡片内容所属的章节标题。"),
@@ -41,6 +38,8 @@ const QaCardSchema = z.object({
 export const ExtractQaFromDocumentOutputSchema = z.array(z.union([ClozeCardSchema, QaCardSchema]));
 export type ExtractQaFromDocumentOutput = z.infer<typeof ExtractQaFromDocumentOutputSchema>;
 
+
+// Genkit Prompt Definition
 const qaExtractionPrompt = ai.definePrompt({
     name: 'qaExtractionPrompt',
     inputSchema: ExtractQaFromDocumentInputSchema,
@@ -82,7 +81,8 @@ const qaExtractionPrompt = ai.definePrompt({
 `,
 });
 
-export const extractQaFlow = defineFlow(
+// Genkit Flow Definition
+export const extractQaFlow = ai.defineFlow(
   {
     name: 'extractQaFlow',
     inputSchema: ExtractQaFromDocumentInputSchema,

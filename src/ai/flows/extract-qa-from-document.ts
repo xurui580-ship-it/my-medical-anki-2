@@ -1,25 +1,30 @@
 'use server';
 /**
- * @fileOverview Client-callable server action to trigger the document QA extraction flow.
- * This file provides the exported function that the Next.js frontend can
- * call. It uses `runFlow` from the Genkit Next.js plugin to securely
- * call the backend Genkit flow.
+ * @fileOverview Defines the client-callable server action for extracting Q&A from a document.
+ * This file separates the client-facing action from the Genkit flow definition.
  */
-import { runFlow } from '@genkit-ai/next/server';
+import { extractQaFlow } from '@/ai/flows';
 import type {
   ExtractQaFromDocumentInput,
   ExtractQaFromDocumentOutput,
 } from '@/ai/flows';
-import { extractQaFlow } from '@/ai/flows';
+
+// Re-export types for client-side components
+export type {
+  ExtractQaFromDocumentInput,
+  ExtractQaFromDocumentOutput,
+};
+export { ExtractQaFromDocumentInputSchema } from '@/ai/flows';
+
 
 /**
- * The main client-callable function that triggers the Genkit flow.
- * @param input The document data URI and optional focus.
- * @returns A promise that resolves to the array of extracted Q&A cards.
+ * A server action that can be called from client components to run the
+ * Q&A extraction flow.
+ * @param input The document data and focus.
+ * @returns An array of extracted question and answer cards.
  */
 export async function extractQaFromDocument(
   input: ExtractQaFromDocumentInput
 ): Promise<ExtractQaFromDocumentOutput> {
-  // The Genkit Next.js plugin will handle routing this call correctly.
-  return await runFlow(extractQaFlow, input);
+  return await extractQaFlow(input);
 }
