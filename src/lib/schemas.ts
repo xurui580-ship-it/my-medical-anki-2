@@ -13,7 +13,7 @@ export const ExtractQaFromDocumentInputSchema = z.object({
 });
 
 export const ClozeCardSchema = z.object({
-    type: z.literal("cloze"),
+    type: z.enum(["cloze"]),
     chapter: z.string().optional().describe("如果识别到，则为卡片内容所属的章节标题。"),
     content: z.string().describe("The full medical statement with the key information hidden using {{c1::...}}."),
     tags: z.array(z.string()).describe("Tags related to the card content (e.g., discipline, system, disease)."),
@@ -21,7 +21,7 @@ export const ClozeCardSchema = z.object({
 });
 
 export const QaCardSchema = z.object({
-    type: z.literal("qa"),
+    type: z.enum(["qa"]),
     chapter: z.string().optional().describe("如果识别到，则为卡片内容所属的章节标题。"),
     front: z.string().describe("A clear, specific clinical or mechanistic question."),
     back: z.string().describe("A precise, concise, and structured answer."),
