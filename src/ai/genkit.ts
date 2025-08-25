@@ -10,7 +10,7 @@ const g = globalThis as any;
 
 if (!g.ai) {
   g.ai = genkit({
-    plugins: [googleAI({ apiVersion: 'v1' })],
+    plugins: [googleAI({ apiVersion: 'v1beta' })],
   });
 }
 
