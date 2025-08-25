@@ -12,6 +12,8 @@ import { Loader2, UploadCloud, CheckCircle, AlertTriangle, Wand2, Save, Badge, F
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { useDecks } from "@/contexts/DeckContext";
+import type { Card as CardType, Deck } from "@/lib/types";
 
 type FormValues = {
     document: FileList;
@@ -27,6 +29,7 @@ export function DocumentUploadForm() {
   const [errorMessage, setErrorMessage] = useState("");
   const { toast } = useToast();
   const router = useRouter();
+  const { addDeck } = useDecks();
   const documentFile = watch("document");
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -86,14 +89,48 @@ export function DocumentUploadForm() {
   };
 
   const handleSaveDeck = () => {
-    // In a real app, save the extractedQAs to the user's decks
-    console.log("Saving deck:", extractedCards);
+    if (!documentFile || documentFile.length === 0 || extractedCards.length === 0) {
+        toast({
+            title: "无法保存",
+            description: "没有可保存的卡片。",
+            variant: "destructive"
+        });
+        return;
+    }
+
+    const deckName = documentFile[0].name.replace(/\.[^/.]+$/, "");
+
+    const newDeck: Deck = {
+        id: `doc-${Date.now()}`,
+        name: deckName,
+        source: 'doc',
+        createdAt: new Date().toISOString(),
+        dailyNewLearned: 0,
+        reviewModeToday: false,
+        cards: extractedCards.map((card, index) => ({
+            id: `doc-card-${Date.now()}-${index}`,
+            q: card.type === 'qa' ? card.front : card.content, // Simplified for now
+            a: card.type === 'qa' ? card.back : card.content.replace(/{{c1::(.*?)}}/g, '$1'), // Simplified for now
+            chapter: card.chapter,
+            media: card.media,
+            isNew: true,
+            ease: 2.5,
+            intervalDays: 0,
+            repetitions: 0,
+            dueAt: new Date().toISOString(),
+            history: [],
+        })) as CardType[],
+    };
+
+    addDeck(newDeck);
+    
     toast({
       title: "卡组已保存",
-      description: "从文档导入的卡组已成功创建。",
+      description: `从文档 "${deckName}" 导入的卡组已成功创建。`,
     });
     router.push("/decks");
   };
+
 
   const handleReplaceFileClick = () => {
     fileInputRef.current?.click();
@@ -248,3 +285,5 @@ export function DocumentUploadForm() {
     </div>
   );
 }
+
+    
