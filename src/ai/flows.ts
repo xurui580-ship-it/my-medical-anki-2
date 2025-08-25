@@ -2,8 +2,8 @@
 // It is imported by `src/ai/dev.ts` and is not meant for client-side consumption.
 
 import { ai } from '@/ai/genkit';
-import { z } from 'genkit';
-import { defineFlow } from 'genkit/flow';
+import { z, defineFlow } from 'genkit';
+
 
 // Define the input schema for the function
 const ExtractQaFromDocumentInputSchema = z.object({
