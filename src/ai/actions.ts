@@ -7,7 +7,6 @@
  */
 import {z} from 'zod';
 import {ai} from '@/ai/genkit';
-import { defineFlow, definePrompt } from 'genkit';
 
 
 // --- Input/Output Schemas ---
@@ -90,7 +89,7 @@ const qaExtractionPrompt = ai.definePrompt({
 `,
 });
 
-export const extractQaFlow = ai.defineFlow(
+const extractQaFlow = ai.defineFlow(
   {
     name: 'extractQaFlow',
     inputSchema: ExtractQaFromDocumentInputSchema,
