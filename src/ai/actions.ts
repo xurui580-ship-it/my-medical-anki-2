@@ -18,7 +18,7 @@ import {
 
 const qaExtractionPrompt = ai.definePrompt({
     name: 'qaExtractionPrompt',
-    model: 'googleai/gemini-1.5-pro-latest',
+    model: 'googleai/gemini-1.5-flash-latest',
     input: {schema: ExtractQaFromDocumentInputSchema},
     output: {schema: ExtractQaFromDocumentOutputSchema},
     prompt: `
