@@ -122,7 +122,7 @@ export async function extractQaFromDocument(
         'X-Title': 'MediFlash', // Optional: For OpenRouter ranking
       },
       body: JSON.stringify({
-        model: "deepseek/deepseek-chat",
+        model: "deepseek/deepseek-chat", // 使用DeepSeek的聊天模型
         messages: [
             { "role": "system", "content": SYSTEM_PROMPT },
             { "role": "user", "content": user_content }
