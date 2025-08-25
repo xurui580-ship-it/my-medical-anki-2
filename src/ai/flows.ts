@@ -1,3 +1,5 @@
+
+'use server';
 /**
  * @fileOverview Defines the Genkit flow for extracting Q&A pairs from a document.
  * This file should not be included in the Next.js bundle and is only used by the
@@ -111,3 +113,16 @@ export const extractQaFlow = ai.defineFlow(
     }
   }
 );
+
+
+/**
+ * A server action that can be called from client components to run the
+ * Q&A extraction flow.
+ * @param input The document data and focus.
+ * @returns An array of extracted question and answer cards.
+ */
+export async function extractQaFromDocument(
+  input: ExtractQaFromDocumentInput
+): Promise<ExtractQaFromDocumentOutput> {
+   return await extractQaFlow(input);
+}

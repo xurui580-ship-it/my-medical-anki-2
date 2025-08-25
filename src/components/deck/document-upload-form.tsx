@@ -3,7 +3,7 @@
 
 import { useState, useMemo, useRef } from "react";
 import { useForm } from "react-hook-form";
-import { extractQaFromDocument, type ExtractQaFromDocumentOutput, type ExtractQaFromDocumentInput } from "@/ai/flows/extract-qa-from-document";
+import { extractQaFromDocument, type ExtractQaFromDocumentOutput, type ExtractQaFromDocumentInput } from "@/ai/flows";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,7 +26,7 @@ export function DocumentUploadForm() {
   const [formState, setFormState] = useState<FormState>("idle");
   const [documentFile, setDocumentFile] = useState<File | null>(null);
   const [extractedCards, setExtractedCards] = useState<ExtractQaFromDocumentOutput>([]);
-  const [errorMessage, setErrorMessage] = useState("");
+  const [errorMessage, setErrorMessage]_useState("");
   const { toast } = useToast();
   const router = useRouter();
   const { addDeck } = useDecks();
