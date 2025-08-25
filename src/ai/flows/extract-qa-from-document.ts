@@ -107,9 +107,9 @@ export async function extractQaFromDocument(
 `;
     
   // Prepare the content for the user message
-  let user_content = `这是我上传的文档内容，请根据它生成卡片。文档数据： ${input.documentDataUri}`;
+  let prompt_text = `这是我上传的文档内容，请根据它生成卡片。`;
   if(input.focus) {
-    user_content += `\n\n请特别关注以下重点：${input.focus}`;
+    prompt_text += `\n\n请特别关注以下重点：${input.focus}`;
   }
 
 
@@ -125,7 +125,13 @@ export async function extractQaFromDocument(
         model: "deepseek/deepseek-chat", // 使用DeepSeek的聊天模型
         messages: [
             { "role": "system", "content": SYSTEM_PROMPT },
-            { "role": "user", "content": user_content }
+            { 
+              "role": "user", 
+              "content": [
+                { "type": "text", "text": prompt_text },
+                { "type": "image_url", "image_url": { "url": input.documentDataUri } }
+              ]
+            }
         ],
         // The API returns a JSON object that contains a string. We need to parse that string.
         // So we can't use response_format here directly.
