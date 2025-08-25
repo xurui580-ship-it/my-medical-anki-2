@@ -66,7 +66,7 @@ const extractQaFlow = ai.defineFlow(
   async (input) => {
     try {
         console.log("Running Genkit flow with input:", { focus: input.focus, uriLength: input.documentDataUri.length });
-        const { output } = await qaExtractionPrompt.generate({input});
+        const { output } = await qaExtractionPrompt.generate(input);
 
         if (!output) {
           console.error("Genkit flow returned no output.");
