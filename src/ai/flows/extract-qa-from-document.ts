@@ -1,8 +1,8 @@
 'use server';
 /**
  * @fileOverview Client-side function to trigger the AI-powered Q&A extraction flow.
- * This file defines the Genkit flow and also exports a function that can be
- * called from React components.
+ * This file exports a function that can be called from React components to
+ * call the backend Genkit flow.
  */
 
 import { runFlow } from 'genkit/next';
@@ -10,7 +10,6 @@ import type {
   ExtractQaFromDocumentInput,
   ExtractQaFromDocumentOutput,
 } from '@/ai/flows';
-import { extractQaFlow } from '@/ai/flows';
 
 /**
  * The main client-callable function that triggers the Genkit flow.
@@ -22,16 +21,15 @@ export async function extractQaFromDocument(
 ): Promise<ExtractQaFromDocumentOutput> {
   try {
     console.log("Running Genkit flow with input:", { focus: input.focus, uriLength: input.documentDataUri.length });
-    
-    // With the @genkit-ai/next plugin, we can directly call the flow
-    // from server components or other server-side code.
-    const output = await extractQaFlow(input);
-    
+
+    // With the @genkit-ai/next plugin, we can run a flow by its name.
+    const output = await runFlow('extractQaFlow', input);
+
     if (!output) {
       console.error("Genkit flow returned no output.");
       throw new Error("AI模型未能生成任何卡片。");
     }
-    
+
     console.log(`Successfully extracted ${output.length} cards.`);
     return output;
 
